@@ -11,6 +11,7 @@ SHELL_WIDTH = 22.5
 SHELL_HEIGHT = 7.5
 
 index = 0
+current_tick = 0
 
 
 def log_print(s):
@@ -161,6 +162,16 @@ def get_turret_speed(tank):
     return degree_to_rad(0.5 * (1 + live_percentage))
 
 
+def get_possible_shell(tank):
+    tvx = math.cos(tank.angle + tank.turret_relative_angle)
+    tvy = math.sin(tank.angle + tank.turret_relative_angle)
+    return Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
+            x=tank.x, y=tank.y,
+            speed_x=tvx * SHELL_AVERAGE_SPEED,
+            speed_y=tvy * SHELL_AVERAGE_SPEED,
+            angle=tank.angle + tank.turret_relative_angle, angular_speed=0)
+
+
 def time_before_hit(tank, target):
     angle_to_target = tank.get_turret_angle_to_unit(target)
     distance_to_target = tank.get_distance_to_unit(target)
@@ -308,19 +319,18 @@ def fire_to(goal, me, world, move):
     else:
         move.turret_turn = 1. if turret_angle > 0 else -1.
 
-    tvx = math.cos(me.angle + me.turret_relative_angle)
-    tvy = math.sin(me.angle + me.turret_relative_angle)
-    possible_shell = Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
-            x=me.x, y=me.y,
-            speed_x=tvx * SHELL_AVERAGE_SPEED,
-            speed_y=tvy * SHELL_AVERAGE_SPEED,
-            angle=me.angle + me.turret_relative_angle, angular_speed=0)
+    possible_shell = get_possible_shell(me)
 
     if abs(turret_angle) > max_fire_angle:
         move.fire_type = FireType.NONE
     elif is_goal_blocked(possible_shell, goal, world):
         move.fire_type = FireType.NONE
     else:
+        # if me.remaining_reloading_time == 0:
+        #     print 'shell angle ', possible_shell.angle
+        #     print 'shell pos ', possible_shell.x, possible_shell.y
+        #     print 'shell speed ', possible_shell.speedX, possible_shell.speedY
+        #     print '=' * 10
         if distance > get_max_premium_distance(world):
             move.fire_type = FireType.REGULAR
         else:
@@ -328,6 +338,10 @@ def fire_to(goal, me, world, move):
 
 
 def move_to_unit(goal, me, world, move):
+    min_dist = 5
+    if math.hypot(goal.x - me.x, goal.y - me.y) < min_dist:
+        return False
+
     x, y = goal.x, goal.y
     min_angle = math.pi / 6
 
@@ -352,6 +366,8 @@ def move_to_unit(goal, me, world, move):
         move.left_track_power = 1.
         move.right_track_power = -1.
 
+    return True
+
 
 # return True if shell path crossed me
 def is_shell_dangerous(me, shell, world):
@@ -369,7 +385,16 @@ def is_shell_dangerous(me, shell, world):
             speed_x=shell.speedX, speed_y=shell.speedY, 
             angle=shell.angle, angular_speed=shell.angular_speed)
 
-    if not is_goal_blocked_by(shell, next_shell, me):
+
+    time_before_hit = me.get_distance_to_unit(shell) / speed_mod
+    next_me_x = me.x + time_before_hit * me.speedX
+    next_me_y = me.y + time_before_hit * me.speedY
+    next_me = Unit(me.id, width=me.width, height=me.height, 
+            x=next_me_x, y=next_me_y,
+            speed_x=me.speedX, speed_y=me.speedY, 
+            angle=me.angle, angular_speed=me.angular_speed)
+
+    if not is_goal_blocked_by(shell, next_shell, next_me):
         return False
 
     if is_goal_blocked(shell, me, world):
@@ -638,11 +663,27 @@ def avoid_possible_shells(me, world, move):
     return avoid_shell(possible_shell, me, world, move)
 
 
+def help_turret(me, move):
+    angle = move.turret_turn
+    if abs(angle) < degree_to_rad(1):
+        return False
+
+    if angle > 0:
+        move.left_track_power = 0.75
+        move.right_track_power = -1.
+    else:
+        move.left_track_power = -1.
+        move.right_track_power = 0.75
+    return True
+
+
 class MyStrategy:
     def __init__(self):
-        self.counter = 0
+        pass
 
     def move(self, me, world, move):
+        global current_tick
+        current_tick += 1
 
         target_enemy = get_target_enemy(me, world)
 
@@ -651,9 +692,9 @@ class MyStrategy:
         if not avoid_shells(me, world, move):
             if not avoid_possible_shells(me, world, move):
                 stratgic_goal = get_strategic_goal(me, world)
-                move_to_unit(stratgic_goal, me, world, move)
+                if not move_to_unit(stratgic_goal, me, world, move):
+                    help_turret(me, move)
 
-        self.counter += 1
 
     def select_tank(self, tank_index, team_size):
         return TankType.MEDIUM
