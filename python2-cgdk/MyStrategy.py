@@ -174,7 +174,7 @@ def time_before_hit(tank, target):
     if abs(total_angle_speed) < eps:
         total_angle_speed = eps
 
-    time_before_shot = max(tank.remaining_reloading_time, angle_to_target / total_angle_speed)
+    time_before_shot = max(tank.remaining_reloading_time, abs(angle_to_target) / total_angle_speed)
     flight_time = distance_to_target / SHELL_AVERAGE_SPEED
     return flight_time + time_before_shot + 1
 
