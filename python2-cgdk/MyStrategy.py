@@ -616,12 +616,24 @@ def get_strategic_goal(me, world):
     return min(corners, key=lambda c: me.get_distance_to_unit(c))
 
 
+# FIXME strange working feature
+def time_before_enemy_hit_me(me, enemy):
+    dist = me.get_distance_to_unit(enemy)
+    angle = enemy.get_turret_angle_to_unit(me)
+
+    # before_shot_time = max(enemy.remaining_reloading_time, angle * (1 + enemy.angular_speed))
+    # FIXME add angular speed here
+    before_shot_time = max(enemy.remaining_reloading_time, angle)
+    after_shot_time = dist / SHELL_AVERAGE_SPEED
+    return before_shot_time + after_shot_time
+
+
 def enemy_is_going_hit_only_me(me, enemy, enemies):
-    mine_time = time_before_hit(tank=enemy, target=me)
+    mine_time = time_before_enemy_hit_me(me, enemy)
     for other_enemy in enemies:
         if other_enemy.id == enemy.id:
             continue
-        if time_before_hit(tank=enemy, target=other_enemy) < mine_time:
+        if time_before_enemy_hit_me(other_enemy, enemy) < mine_time:
             return False
     return True
 
@@ -632,7 +644,7 @@ def avoid_possible_shells(me, world, move):
         return False
 
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
-    very_dangerous_enemies = filter(lambda e: time_before_hit(tank=e, target=me) <= 100, dangerous_enemies)
+    very_dangerous_enemies = filter(lambda e: time_before_enemy_hit_me(me, e) <= 100, dangerous_enemies)
     if len(very_dangerous_enemies) != 1:
         return False
 
