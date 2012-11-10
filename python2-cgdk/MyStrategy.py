@@ -32,6 +32,10 @@ def within_world(x, y, world):
     return Point(x, y).within(world)
 
 
+def get_max_premium_distance(world):
+    return math.hypot(world.width, world.height) / 2
+
+
 def rad_to_degree(rad):
     return (rad * 180) / math.pi
 
@@ -172,13 +176,50 @@ def time_before_hit(tank, target):
 
     time_before_shot = max(tank.remaining_reloading_time, angle_to_target / total_angle_speed)
     flight_time = distance_to_target / SHELL_AVERAGE_SPEED
-    return flight_time + time_before_shot
+    return flight_time + time_before_shot + 1
 
+
+def possible_usual_score(me, enemy, world):
+    damage = 20
+    will_be_killed = enemy.crew_health <= damage or enemy.hull_durability <= damage
+    kill_addition = 25 if will_be_killed else 0
+    max_score = min(damage, enemy.crew_health) + min(damage, enemy.hull_durability) + kill_addition
+    min_score = 1
+
+    dist = me.get_distance_to_unit(enemy)
+    short_distance = get_max_premium_distance(world)
+    max_distance = math.hypot(world.width, world.height)
+
+    if dist <= short_distance:
+        return max_score
+
+    if dist >= max_score:
+        return min_score
+
+    probability = 1 - (dist - short_distance) / (max_distance - short_distance)
+
+    return max(min_score, probability * max_score)
+
+
+def possible_premium_score(me, enemy, world):
+    damage = 35
+    will_be_killed = enemy.crew_health <= damage or enemy.hull_durability <= damage
+    kill_addition = 25 if will_be_killed else 0
+    return min(damage, enemy.crew_health) + min(damage, enemy.hull_durability) + kill_addition
+
+
+def possible_score(me, enemy, world):
+    # FIXME add check if enemy blocked
+    if me.get_distance_to_unit(enemy) < get_max_premium_distance(world) and \
+            me.premium_shell_count > 0:
+        return possible_premium_score(me, enemy, world)
+    return possible_usual_score(me, enemy, world)
 
 
 def get_target_enemy(me, world):
     enemies = all_enemies(world)
-    return min(enemies, key=lambda t: time_before_hit(me, t))
+    # return min(enemies, key=lambda t: time_before_hit(me, t))
+    return max(enemies, key=lambda e: possible_score(me, e, world) / time_before_hit(tank=me, target=e))
 
 
 def is_goal_blocked_by(shell, goal, blocker):
@@ -248,10 +289,9 @@ def is_goal_blocked(shell, goal, world):
 
 
 def fire_to(goal, me, world, move):
-    max_premium_distance = math.hypot(world.width, world.height) / 2
 
     distance = me.get_distance_to_unit(goal)
-    # goal_size = min(goal.width, goal.height)
+    # FIXME add something clever here
     goal_size = 15
     max_fire_angle = math.atan2(goal_size, distance)
 
@@ -281,7 +321,7 @@ def fire_to(goal, me, world, move):
     elif is_goal_blocked(possible_shell, goal, world):
         move.fire_type = FireType.NONE
     else:
-        if distance > max_premium_distance:
+        if distance > get_max_premium_distance(world):
             move.fire_type = FireType.REGULAR
         else:
             move.fire_type = FireType.PREMIUM_PREFERRED
