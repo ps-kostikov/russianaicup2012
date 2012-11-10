@@ -150,19 +150,30 @@ def all_enemies(world):
     return filter(lambda t: alive(t) and not t.teammate, world.tanks)
 
 
-def time_before_hit(me, enemy):
-    angle_to_enemy = me.get_turret_angle_to_unit(enemy)
-    if angle_to_enemy * me.angular_speed > 0:
-        total_angle_speed = 1 + abs(me.angular_speed)
+
+def get_turret_speed(tank):
+    '''return turret speed in rad/tick'''
+    live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
+    return degree_to_rad(0.5 * (1 + live_percentage))
+
+
+def time_before_hit(tank, target):
+    angle_to_target = tank.get_turret_angle_to_unit(target)
+    distance_to_target = tank.get_distance_to_unit(target)
+
+    base_turret_speed = get_turret_speed(tank)
+    if angle_to_target * tank.angular_speed > 0:
+        total_angle_speed = base_turret_speed + abs(tank.angular_speed)
     else:
-        total_angle_speed = 1 - abs(me.angular_speed)
+        total_angle_speed = base_turret_speed - abs(tank.angular_speed)
     eps = 1.e-4
     if abs(total_angle_speed) < eps:
         total_angle_speed = eps
-    time_before_shot = max(me.remaining_reloading_time,
-            me.get_turret_angle_to_unit(enemy) / total_angle_speed)
-    flight_time = me.get_distance_to_unit(enemy) / 16.7
+
+    time_before_shot = max(tank.remaining_reloading_time, angle_to_target / total_angle_speed)
+    flight_time = distance_to_target / SHELL_AVERAGE_SPEED
     return flight_time + time_before_shot
+
 
 
 def get_target_enemy(me, world):
@@ -546,17 +557,6 @@ def get_strategic_goal(me, world):
     return min(corners, key=lambda c: me.get_distance_to_unit(c))
 
 
-def time_before_enemy_hit_me(me, enemy):
-    dist = me.get_distance_to_unit(enemy)
-    angle = enemy.get_turret_angle_to_unit(me)
-
-    # before_shot_time = max(enemy.remaining_reloading_time, angle * (1 + enemy.angular_speed))
-    # FIXME add angular speed here
-    before_shot_time = max(enemy.remaining_reloading_time, angle)
-    after_shot_time = dist / SHELL_AVERAGE_SPEED
-    return before_shot_time + after_shot_time
-
-
 def enemy_is_going_hit_only_me(me, enemy, enemies):
     mine_time = time_before_enemy_hit_me(me, enemy)
     for e in enemies:
@@ -573,7 +573,7 @@ def avoid_possible_shells(me, world, move):
         return False
 
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
-    very_dangerous_enemies = filter(lambda e: time_before_enemy_hit_me(me, e) <= 100, dangerous_enemies)
+    very_dangerous_enemies = filter(lambda e: time_before_hit(e, me) <= 100, dangerous_enemies)
     if len(very_dangerous_enemies) != 1:
         return False
 
