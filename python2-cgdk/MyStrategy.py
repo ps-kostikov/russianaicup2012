@@ -382,17 +382,17 @@ def is_shell_dangerous(me, shell, world):
     dist_x = shell.x + vs_x * 1000
     dist_y = shell.y + vs_y * 1000
 
-    next_shell = Unit(shell.id, width=shell.width, height=shell.height, 
+    next_shell = Unit(shell.id, width=shell.width, height=shell.height,
             x=dist_x, y=dist_y,
-            speed_x=shell.speedX, speed_y=shell.speedY, 
+            speed_x=shell.speedX, speed_y=shell.speedY,
             angle=shell.angle, angular_speed=shell.angular_speed)
 
     time_to_touch = me.get_distance_to_unit(shell) / speed_mod
     next_me_x = me.x + time_to_touch * me.speedX
     next_me_y = me.y + time_to_touch * me.speedY
-    next_me = Unit(me.id, width=me.width, height=me.height, 
+    next_me = Unit(me.id, width=me.width, height=me.height,
             x=next_me_x, y=next_me_y,
-            speed_x=me.speedX, speed_y=me.speedY, 
+            speed_x=me.speedX, speed_y=me.speedY,
             angle=me.angle, angular_speed=me.angular_speed)
 
     if not is_goal_blocked_by(shell, next_shell, next_me):
@@ -642,28 +642,13 @@ def get_strategic_goal(me, world):
     return min(corners, key=lambda c: me.get_distance_to_unit(c))
 
 
-def turret_on_me(me, enemy):
-    angle = enemy.get_turret_angle_to_unit(me)
-    return abs(rad_to_degree(angle)) < 20
-
-
-def time_before_enemy_hit_me(me, enemy):
-    dist = me.get_distance_to_unit(enemy)
-    angle = enemy.get_turret_angle_to_unit(me)
-
-    # before_shot_time = max(enemy.remaining_reloading_time, angle * (1 + enemy.angular_speed))
-    # FIXME add angular speed here
-    before_shot_time = max(enemy.remaining_reloading_time, angle)
-    after_shot_time = dist / SHELL_AVERAGE_SPEED
-    return before_shot_time + after_shot_time
-
-
 def enemy_is_going_hit_only_me(me, enemy, enemies):
-    mine_time = time_before_enemy_hit_me(me, enemy)
+    mine_time = time_before_hit(tank=enemy, target=me)
     for e in enemies:
         if e.id == enemy.id:
             continue
-        if time_before_enemy_hit_me(e, enemy) < mine_time:
+
+        if time_before_hit(tank=enemy, target=e) < mine_time:
             return False
     return True
 
@@ -673,8 +658,10 @@ def avoid_possible_shells(me, world, move):
     if len(enemies) == 0:
         return False
 
+    bother_time = 20
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
-    very_dangerous_enemies = filter(lambda e: time_before_enemy_hit_me(me, e) <= 100, dangerous_enemies)
+    very_dangerous_enemies = filter(
+            lambda e: time_before_hit(tank=e, target=me) <= bother_time, dangerous_enemies)
     if len(very_dangerous_enemies) != 1:
         return False
 
