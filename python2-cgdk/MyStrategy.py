@@ -75,6 +75,11 @@ def all_enemies(world):
     return filter(lambda t: alive(t) and not t.teammate, world.tanks)
 
 
+def all_teammates(world):
+    '''alive tanks in my team'''
+    return filter(lambda t: alive(t) and t.teammate, world.tanks)
+
+
 def get_turret_speed(tank):
     '''return turret speed in rad/tick'''
     live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
@@ -138,8 +143,13 @@ def possible_score(me, enemy, world):
 
 def get_enemy(me, world):
     enemies = all_enemies(world)
-    # return min(enemies, key=lambda t: time_before_hit(me, t))
-    return max(enemies, key=lambda e: possible_score(me, e, world) / time_before_hit(tank=me, target=e))
+    teammates = all_teammates(world)
+    def efficiency(enemy):
+        res = 0
+        for teammate in teammates:
+            res += possible_score(teammate, enemy, world) / time_before_hit(tank=teammate, target=enemy)
+        return res
+    return max(enemies, key=lambda e: efficiency(e))
 
 
 def is_goal_blocked_by(shell, goal, blocker):
