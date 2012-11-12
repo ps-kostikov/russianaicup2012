@@ -5,6 +5,9 @@ from model.ShellType import ShellType
 from model.BonusType import BonusType
 from model.Unit import Unit
 
+from geometry import *
+
+
 SHELL_AVERAGE_SPEED = 14.7
 TANK_AVERAGE_SPEED = 1.5
 SHELL_WIDTH = 22.5
@@ -34,88 +37,6 @@ def within_world(x, y, world):
 
 def get_max_premium_distance(world):
     return math.hypot(world.width, world.height) / 2
-
-
-def rad_to_degree(rad):
-    return (rad * 180) / math.pi
-
-
-def degree_to_rad(degree):
-    return (degree * math.pi) / 180
-
-
-def get_cross(v1x, v1y, v2x, v2y):
-    return v1x * v2y - v1y * v2x
-
-
-def get_cross_sign(v1x, v1y, v2x, v2y):
-    cc = get_cross(v1x, v1y, v2x, v2y)
-    return 1. if cc > 0 else -1.
-
-
-def are_intervals_intersect(x1, y1, x2, y2, x3, y3, x4, y4):
-    a1 = x2 - x1
-    a2 = y2 - y1
-    b1 = x3 - x4
-    b2 = y3 - y4
-    c1 = x3 - x1
-    c2 = y3 - y1
-    d = float(a1 * b2 - a2 * b1)
-
-    if abs(d) < 0.001:
-        return False
-
-    t = (c1 * b2 - c2 * b1) / d
-    s = (c2 * a1 - c1 * a2) / d
-
-    return 0 <= t <= 1 and 0 <= s <= 1
-
-
-# for aa, correct in [
-#         ((0, 0, 0, 1, 0, 0, 1, 0), True),
-#         ((0, 0.5, 0, 1, 0.5, 0, 1, 0), False),
-#         ((0, 1, 1, 0, 0, 0, 1, 1), True),
-#         ((0, 1, 0.25, 0.75, 0, 0, 1, 1), False),
-#         ((0, 0, 1, 1, 0, 1, 1, 1.0004), False),
-#         ((0, 0, 1, 1, 0, 1, 1, 0.999), True),
-#         ((0, 0, 1, 1, 0, 1, 0.99, 1), False),
-#         ((0, 0, 0, 1, 1, 0, 1, 1), False),
-#         ]:
-#     ans = are_intervals_intersect(*aa)
-#     if ans != correct:
-#         print "error !!!"
-#     print aa, ans
-
-def get_nearest_point(bx, by, ex, ey, px, py):
-    ebx = bx - ex
-    eby = by - ey
-    l_eb = math.hypot(ebx, eby)
-
-    nebx = ebx / l_eb
-    neby = eby / l_eb
-
-    epx = px - ex
-    epy = py - ey
-
-    l_ep = math.hypot(epx, epy)
-
-    angle = get_angle(ebx, eby, epx, epy)
-
-    nx = ex + nebx * math.cos(angle) * l_ep
-    ny = ey + neby * math.cos(angle) * l_ep
-
-    return nx, ny
-
-
-def get_angle(v1x, v1y, v2x, v2y):
-    l1 = math.hypot(v1x, v1y)
-    l2 = math.hypot(v2x, v2y)
-    prod = (v1x * v2x + v1y * v2y) / (l1 * l2)
-    if prod < -1:
-        prod = -1
-    if prod > 1:
-        prod = 1
-    return math.acos(prod)
 
 
 def get_borders(unit):
@@ -158,22 +79,6 @@ def get_turret_speed(tank):
     '''return turret speed in rad/tick'''
     live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
     return degree_to_rad(0.5 * (1 + live_percentage))
-
-
-# def time_before_hit(me, enemy):
-#     angle_to_enemy = me.get_turret_angle_to_unit(enemy)
-#     if angle_to_enemy * me.angular_speed > 0:
-#         total_angle_speed = 1 + abs(me.angular_speed)
-#     else:
-#         total_angle_speed = 1 - abs(me.angular_speed)
-#     eps = 1.e-4
-#     if abs(total_angle_speed) < eps:
-#         total_angle_speed = eps
-#     time_before_shot = max(me.remaining_reloading_time,
-#             me.get_turret_angle_to_unit(enemy) / total_angle_speed)
-#     flight_time = me.get_distance_to_unit(enemy) / 16.7
-#     return flight_time + time_before_shot
-
 
 
 def time_before_hit(tank, target):
@@ -273,25 +178,6 @@ def is_goal_blocked_by(shell, goal, blocker):
             return True
 
     return False
-
-    # m_dist = me.get_distance_to_unit(blocker)
-    # g_dist = blocker.get_distance_to_unit(goal)
-    # dist = me.get_distance_to_unit(goal)
-
-    # size = math.hypot(blocker.width, blocker.height)
-
-    # v1x = me.x - blocker.x
-    # v1y = me.y - blocker.y
-
-    # v2x = goal.x - blocker.x
-    # v2y = goal.y - blocker.y
-
-    # angle = get_angle(v1x, v1y, v2x, v2y)
-    # if angle < math.pi / 2:
-    #     return False
-
-    # h = (m_dist * g_dist * math.sin(angle)) / dist
-    # return h < size / 2
 
 
 def is_goal_blocked(shell, goal, world):
@@ -403,19 +289,6 @@ def is_shell_dangerous(me, shell, world):
 
     if not is_goal_blocked_by(shell, next_shell, next_me):
         return False
-    # vm_x = me.x - shell.x
-    # vm_y = me.y - shell.y
-
-    # angle = get_angle(vs_x, vs_y, vm_x, vm_y)
-    # if angle > math.pi / 2:
-    #     return False
-
-    # nx, ny = get_nearest_point(shell.x, shell.y, shell.x + vs_x, shell.y + vs_y, me.x, me.y)
-    # h = math.hypot(me.x - nx, me.y - ny)
-    # my_size = math.hypot(me.width, me.height)
-
-    # if h > my_size * 1.2:
-    #     return False
 
     if is_goal_blocked(shell, me, world):
         return False
@@ -738,7 +611,6 @@ class MyStrategy:
                 stratgic_goal = get_strategic_goal(me, world)
                 if not move_to_unit(stratgic_goal, me, world, move):
                     help_turret(me, move)
-
 
         self.counter += 1
 
