@@ -1,3 +1,7 @@
+'''
+Functions related to geometry evaluations
+'''
+
 import math
 
 
