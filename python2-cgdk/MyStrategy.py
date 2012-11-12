@@ -74,12 +74,9 @@ def possible_score(me, enemy, world):
 
 def get_enemy(me, world):
     enemies = all_enemies(world)
-    teammates = all_teammates(world)
+    # teammates = all_teammates(world)
     def efficiency(enemy):
-        res = 0
-        for teammate in teammates:
-            res += possible_score(teammate, enemy, world) / time_before_hit(tank=teammate, target=enemy)
-        return res
+        return possible_score(me, enemy, world) / time_before_hit(tank=me, target=enemy)
     return max(enemies, key=lambda e: efficiency(e))
 
 
