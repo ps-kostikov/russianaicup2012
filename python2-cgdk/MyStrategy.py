@@ -240,8 +240,12 @@ def get_enemy(me, world):
 def is_goal_blocked_by(shell, goal, blocker):
     borders = get_borders(blocker)
 
-    vx = goal.x - shell.x
-    vy = goal.y - shell.y
+    gx, gy = get_nearest_point(shell.x, shell.y,
+            shell.x + shell.speedX, shell.y + shell.speedY,
+            goal.x, goal.y)
+
+    vx = gx - shell.x
+    vy = gy - shell.y
     vlen = math.hypot(vx, vy)
     if vlen < 0.0001:
         vlen = 0.0001
