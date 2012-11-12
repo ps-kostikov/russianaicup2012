@@ -370,6 +370,8 @@ def move_to_unit(goal, me, world, move):
         move.left_track_power = 1.
         move.right_track_power = -1.
 
+    return True
+
 
 # return True if shell path crossed me
 def is_shell_dangerous(me, shell, world):
@@ -658,7 +660,10 @@ def avoid_possible_shells(me, world, move):
     if len(enemies) == 0:
         return False
 
-    bother_time = 20
+    # for e in enemies:
+    #     if e.id != 5:
+    #         print e.id, time_before_hit(tank=e, target=me)
+    bother_time = 40
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
     very_dangerous_enemies = filter(
             lambda e: time_before_hit(tank=e, target=me) <= bother_time, dangerous_enemies)
@@ -729,6 +734,7 @@ class MyStrategy:
                 stratgic_goal = get_strategic_goal(me, world)
                 if not move_to_unit(stratgic_goal, me, world, move):
                     help_turret(me, move)
+
 
         self.counter += 1
 
