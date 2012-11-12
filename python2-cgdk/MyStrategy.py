@@ -101,13 +101,16 @@ def fire_to(goal, me, world, move):
     else:
         move.turret_turn = 1. if turret_angle > 0 else -1.
 
-    tvx = math.cos(me.angle + me.turret_relative_angle)
-    tvy = math.sin(me.angle + me.turret_relative_angle)
+    shell_angle = me.angle + me.turret_relative_angle
+    tvx = math.cos(shell_angle)
+    tvy = math.sin(shell_angle)
+
     possible_shell = Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
-            x=me.x, y=me.y,
+            x=me.x + me.virtual_gun_length * math.cos(shell_angle), 
+            y=me.y + me.virtual_gun_length * math.sin(shell_angle),
             speed_x=tvx * SHELL_AVERAGE_SPEED,
             speed_y=tvy * SHELL_AVERAGE_SPEED,
-            angle=me.angle + me.turret_relative_angle, angular_speed=0)
+            angle=shell_angle, angular_speed=0)
 
     if abs(turret_angle) > max_fire_angle:
         move.fire_type = FireType.NONE
@@ -481,7 +484,7 @@ def help_turret(me, move):
 
 class MyStrategy:
     def __init__(self):
-        self.counter = 0
+        pass
 
     def move(self, me, world, move):
 
@@ -494,8 +497,6 @@ class MyStrategy:
                 stratgic_goal = get_strategic_goal(me, world)
                 if not move_to_unit(stratgic_goal, me, world, move):
                     help_turret(me, move)
-
-        self.counter += 1
 
     def select_tank(self, tank_index, team_size):
         return TankType.MEDIUM

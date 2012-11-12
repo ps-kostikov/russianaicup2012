@@ -92,10 +92,10 @@ def is_goal_blocked_by(shell, goal, blocker):
     pessimistic_coeff = 1.5
     dx = pessimistic_coeff * (nvx * SHELL_HEIGHT / 2.)
     dy = pessimistic_coeff * (nvy * SHELL_HEIGHT / 2.)
-    main_line = (goal.x, goal.y, shell.x, shell.y)
+    main_line = (gx, gy, shell.x, shell.y)
     # print main_line
-    border_line1 = (goal.x + dx, goal.y + dy, shell.x + dx, shell.y + dy)
-    border_line2 = (goal.x - dx, goal.y - dy, shell.x - dx, shell.y - dy)
+    border_line1 = (gx + dx, gy + dy, shell.x + dx, shell.y + dy)
+    border_line2 = (gx - dx, gy - dy, shell.x - dx, shell.y - dy)
 
     for border in borders:
         x1, y1, x2, y2 = border
