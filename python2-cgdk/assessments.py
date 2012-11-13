@@ -50,7 +50,7 @@ def possible_score(me, enemy, world):
     blocker = get_blocker(possible_shell, enemy, world)
     if blocker is not None:
         if isinstance(blocker, Tank):
-            if not utils.alive(tank):
+            if not utils.alive(blocker):
                 return 0
 
     if me.get_distance_to_unit(enemy) < get_max_premium_distance(world) and \

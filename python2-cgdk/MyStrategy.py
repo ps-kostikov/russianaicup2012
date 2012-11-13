@@ -45,13 +45,14 @@ class Zone:
         return self.x, self.y
 
 def get_zones():
-    x, y = 0., 0.
+    base = constants.ZONE_RADIUS / 2.
+    x = y = base
     res = []
     while x <= constants.WORLD_WIDTH:
         while y <= constants.WORLD_HEIGHT:
             res.append(Zone(x, y))
             y += constants.ZONE_RADIUS
-        y = 0.
+        y = base
         x += constants.ZONE_RADIUS
     return res
 
@@ -493,8 +494,8 @@ class MyStrategy:
 
         if not avoid_shells(me, world, move):
             if not avoid_possible_shells(me, world, move):
-                stratgic_goal = get_strategic_goal(me, world)
-                if not move_to_unit(stratgic_goal, me, world, move):
+                strategic_goal = get_strategic_goal(me, world)
+                if not move_to_unit(strategic_goal, me, world, move):
                     help_turret(me, move)
 
     def select_tank(self, tank_index, team_size):
