@@ -89,8 +89,8 @@ def fire_to(goal, me, world, move):
     tvy = math.sin(shell_angle)
 
     possible_shell = Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
-            x=me.x + me.virtual_gun_length * math.cos(shell_angle), 
-            y=me.y + me.virtual_gun_length * math.sin(shell_angle),
+            x=me.x,
+            y=me.y,
             speed_x=tvx * SHELL_AVERAGE_SPEED,
             speed_y=tvy * SHELL_AVERAGE_SPEED,
             angle=shell_angle, angular_speed=0)
