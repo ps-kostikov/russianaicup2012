@@ -7,6 +7,7 @@ from model.Unit import Unit
 
 from geometry import *
 from utils import *
+import utils
 from constants import *
 import constants
 from assessments import *
@@ -84,16 +85,7 @@ def fire_to(goal, me, world, move):
     else:
         move.turret_turn = 1. if turret_angle > 0 else -1.
 
-    shell_angle = me.angle + me.turret_relative_angle
-    tvx = math.cos(shell_angle)
-    tvy = math.sin(shell_angle)
-
-    possible_shell = Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
-            x=me.x,
-            y=me.y,
-            speed_x=tvx * SHELL_AVERAGE_SPEED,
-            speed_y=tvy * SHELL_AVERAGE_SPEED,
-            angle=shell_angle, angular_speed=0)
+    possible_shell = utils.make_possible_shell(me)
 
     if abs(turret_angle) > max_fire_angle:
         move.fire_type = FireType.NONE

@@ -4,9 +4,12 @@ Approximate functions for value assessments
 
 import math
 
+from model.Tank import Tank
+
 from geometry import *
 import constants
 from utils import *
+import utils
 
 
 def get_max_premium_distance(world):
@@ -43,7 +46,13 @@ def possible_premium_score(me, enemy, world):
 
 
 def possible_score(me, enemy, world):
-    # FIXME add check if enemy blocked
+    possible_shell = utils.make_possible_shell(me)
+    blocker = get_blocker(possible_shell, enemy, world)
+    if blocker is not None:
+        if isinstance(blocker, Tank):
+            if not utils.alive(tank):
+                return 0
+
     if me.get_distance_to_unit(enemy) < get_max_premium_distance(world) and \
             me.premium_shell_count > 0:
         return possible_premium_score(me, enemy, world)

@@ -2,6 +2,8 @@
 Precise functions without any heuristics
 '''
 
+from model.Unit import Unit
+
 from geometry import *
 from constants import *
 
@@ -109,14 +111,34 @@ def is_goal_blocked_by(shell, goal, blocker):
     return False
 
 
-def is_goal_blocked(shell, goal, world):
+def get_blocker(shell, goal, world):
     blockers = world.bonuses + filter(lambda t: not alive(t), world.tanks) + filter(lambda t: t.teammate, world.tanks)
     blockers = filter(lambda o: o.get_distance_to_unit(shell) > 0.01 and
             o.get_distance_to_unit(goal) > 0.01, blockers)
 
     for blocker in blockers:
         if is_goal_blocked_by(shell, goal, blocker):
-            return True
-    return False
+            return blocker
+    return None
+
+
+def is_goal_blocked(shell, goal, world):
+    blocker = get_blocker(shell, goal, world)
+    return blocker is not None
+
+
+def make_possible_shell(tank):
+    shell_angle = tank.angle + tank.turret_relative_angle
+    tvx = math.cos(shell_angle)
+    tvy = math.sin(shell_angle)
+
+    return Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
+            x=tank.x,
+            y=tank.y,
+            speed_x=tvx * SHELL_AVERAGE_SPEED,
+            speed_y=tvy * SHELL_AVERAGE_SPEED,
+            angle=shell_angle, angular_speed=0)
+
+
 
 
