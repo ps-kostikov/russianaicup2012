@@ -6,6 +6,7 @@ from model.BonusType import BonusType
 from model.Unit import Unit
 
 from geometry import *
+import geometry
 from utils import *
 import utils
 from constants import *
@@ -35,25 +36,47 @@ def within_world(x, y, world):
 
 
 class Zone:
-    def __init__(self, x, y):
+    def __init__(self, x, y, r=constants.ZONE_RADIUS):
         self.x = x
         self.y = y
-        self.r = constants.ZONE_RADIUS
+        self.r = r
 
     def get_point_to_move(self, tank):
-        #FIX ME add some usefull here
-        return self.x, self.y
+
+        if math.hypot(tank.x - self.x, tank.y - self.y) <= self.r:
+            return Point(tank.x, tank.y)
+
+        tvx = math.cos(tank.angle)
+        tvy = math.sin(tank.angle)
+        npx, npy = geometry.get_nearest_point(tank.x, tank.y, tank.x + tvx, tank.y + tvy,
+                self.x, self.y)
+
+        vx = npx - self.x
+        vy = npy - self.y
+        ll = math.hypot(vx, vy)
+        vx /= ll
+        vy /= ll
+
+        # FIXME rather rude but can be usefull
+        return Point(self.x + vx * self.r, self.y + vy * self.r)
+
+
+def make_zone(bonus, tank):
+    # r = min(bonus.width / 2., bonus.height / 2.) + min(tank.width / 2., tank.height / 2.)
+    r = min(bonus.width / 2., bonus.height / 2.)
+    return Zone(bonus.x, bonus.y, r)
+
 
 def get_zones():
-    base = constants.ZONE_RADIUS / 2.
+    base = constants.ZONE_RADIUS
     x = y = base
     res = []
     while x <= constants.WORLD_WIDTH:
         while y <= constants.WORLD_HEIGHT:
             res.append(Zone(x, y))
-            y += constants.ZONE_RADIUS
+            y += constants.ZONE_RADIUS * 2
         y = base
-        x += constants.ZONE_RADIUS
+        x += constants.ZONE_RADIUS * 2
     return res
 
 
@@ -353,7 +376,7 @@ def get_bonus_rating(me, bonus):
 
 def get_best_zone(me, world):
     zones = get_zones()
-    neighbour_zones = filter(lambda z: me.get_distance_to(z.x, z.y) < constants.ZONE_RADIUS * 1.6,
+    neighbour_zones = filter(lambda z: me.get_distance_to(z.x, z.y) < constants.ZONE_RADIUS * 2 * 1.6,
             zones)
     enemies = all_enemies(world)
     team_power = get_team_power(world)
@@ -377,34 +400,22 @@ def get_best_zone(me, world):
 
     return max(neighbour_zones, key=lambda z: value(z))
 
+
 def get_strategic_goal(me, world):
     enemies = all_enemies(world)
 
     if len(enemies) <= 1:
         if len(world.bonuses) > 0:
-            goal = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
-            return Point(goal.x, goal.y)
-
-        # return Point(world.width / 2, world.height / 2)
+            bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
+            return make_zone(bonus, me)
 
     if len(world.bonuses) > 0:
-        goal = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
+        bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
         min_enemy_dist = min([me.get_distance_to_unit(e) for e in (enemies)])
-        if me.get_distance_to_unit(goal) < min_enemy_dist:
-            return Point(goal.x, goal.y)
+        if me.get_distance_to_unit(bonus) < min_enemy_dist:
+            return make_zone(bonus, me)
 
-    # delta = 60
-    # corners = [
-    #     Point(delta, delta),
-    #     Point(world.width - delta, delta),
-    #     Point(world.width - delta, world.height - delta),
-    #     Point(delta, world.height - delta)
-    #     ]
-
-    # return min(corners, key=lambda c: me.get_distance_to_unit(c))
-
-    best_zone = get_best_zone(me, world)
-    return Point(best_zone.x, best_zone.y)
+    return get_best_zone(me, world)
 
 
 def enemy_is_going_hit_only_me(me, enemy, enemies):
@@ -494,8 +505,9 @@ class MyStrategy:
 
         if not avoid_shells(me, world, move):
             if not avoid_possible_shells(me, world, move):
-                strategic_goal = get_strategic_goal(me, world)
-                if not move_to_unit(strategic_goal, me, world, move):
+                zone = get_strategic_goal(me, world)
+                point = zone.get_point_to_move(me)
+                if not move_to_unit(point, me, world, move):
                     help_turret(me, move)
 
     def select_tank(self, tank_index, team_size):
