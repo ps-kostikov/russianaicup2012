@@ -8,6 +8,7 @@ from model.Unit import Unit
 from geometry import *
 from utils import *
 from constants import *
+from assessments import *
 
 index = 0
 
@@ -29,47 +30,6 @@ class Point:
 
 def within_world(x, y, world):
     return Point(x, y).within(world)
-
-
-def get_max_premium_distance(world):
-    return math.hypot(world.width, world.height) / 2
-
-
-def possible_usual_score(me, enemy, world):
-    damage = 20
-    will_be_killed = enemy.crew_health <= damage or enemy.hull_durability <= damage
-    kill_addition = 25 if will_be_killed else 0
-    max_score = min(damage, enemy.crew_health) + min(damage, enemy.hull_durability) + kill_addition
-    min_score = 1
-
-    dist = me.get_distance_to_unit(enemy)
-    short_distance = get_max_premium_distance(world)
-    max_distance = math.hypot(world.width, world.height)
-
-    if dist <= short_distance:
-        return max_score
-
-    if dist >= max_score:
-        return min_score
-
-    probability = 1 - (dist - short_distance) / (max_distance - short_distance)
-
-    return max(min_score, probability * max_score)
-
-
-def possible_premium_score(me, enemy, world):
-    damage = 35
-    will_be_killed = enemy.crew_health <= damage or enemy.hull_durability <= damage
-    kill_addition = 25 if will_be_killed else 0
-    return min(damage, enemy.crew_health) + min(damage, enemy.hull_durability) + kill_addition
-
-
-def possible_score(me, enemy, world):
-    # FIXME add check if enemy blocked
-    if me.get_distance_to_unit(enemy) < get_max_premium_distance(world) and \
-            me.premium_shell_count > 0:
-        return possible_premium_score(me, enemy, world)
-    return possible_usual_score(me, enemy, world)
 
 
 def get_enemy(me, world):
