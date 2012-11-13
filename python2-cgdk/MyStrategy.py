@@ -8,6 +8,7 @@ from model.Unit import Unit
 from geometry import *
 from utils import *
 from constants import *
+import constants
 from assessments import *
 
 index = 0
@@ -30,6 +31,28 @@ class Point:
 
 def within_world(x, y, world):
     return Point(x, y).within(world)
+
+
+class Zone:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.r = constants.ZONE_RADIUS
+
+    def get_point_to_move(self, tank):
+        #FIX ME add some usefull here
+        return self.x, self.y
+
+def get_zones():
+    x, y = 0., 0.
+    res = []
+    while x <= constants.WORLD_WIDTH:
+        while y <= constants.WORLD_HEIGHT:
+            res.append(Zone(x, y))
+            y += constants.ZONE_RADIUS
+        y = 0.
+        x += constants.ZONE_RADIUS
+    return res
 
 
 def get_enemy(me, world):
@@ -334,6 +357,33 @@ def get_bonus_rating(me, bonus):
     return get_bonus_value(me, bonus) / time
 
 
+
+def get_best_zone(me, world):
+    zones = get_zones()
+    neighbour_zones = filter(lambda z: me.get_distance_to(z.x, z.y) < constants.ZONE_RADIUS * 1.6,
+            zones)
+    enemies = all_enemies(world)
+    team_power = get_team_power(world)
+
+    def damage(zone):
+        res = 0
+        for e in enemies:
+            res += get_power(e) * damage_probability(e.x, e.y, zone.x, zone.y)
+        return res
+
+    def my_damage(zone):
+        res = 0
+        power = get_power(me)
+        for e in enemies:
+            res += power * damage_probability(zone.x, zone.y, e.x, e.y)
+        return res
+
+    def value(zone):
+        enemy_power = 1 - team_power
+        return team_power * my_damage(zone) - enemy_power * damage(zone)
+
+    return max(neighbour_zones, key=lambda z: value(z))
+
 def get_strategic_goal(me, world):
     enemies = all_enemies(world)
 
@@ -342,29 +392,26 @@ def get_strategic_goal(me, world):
             goal = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
             return Point(goal.x, goal.y)
 
-        return Point(world.width / 2, world.height / 2)
+        # return Point(world.width / 2, world.height / 2)
 
-    # min_enemy_dist = min([me.get_distance_to_unit(e) for e in (enemies)])
-    # bonuses = filter(lambda b: me.get_distance_to_unit(b) < min_enemy_dist, world.bonuses)
-    # bonuses = filter(lambda b: is_bonus_usefull(me, b), bonuses)
     if len(world.bonuses) > 0:
         goal = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
         min_enemy_dist = min([me.get_distance_to_unit(e) for e in (enemies)])
         if me.get_distance_to_unit(goal) < min_enemy_dist:
             return Point(goal.x, goal.y)
-        # bonus_time = get_time_to_bonus(me, goal)
-        # enemy = min(enemies, key=lambda e: time_before_enemy_hit_me(me, e))
-        # enemy_time = time_before_enemy_hit_me(me, enemy)
 
-    delta = 60
-    corners = [
-        Point(delta, delta),
-        Point(world.width - delta, delta),
-        Point(world.width - delta, world.height - delta),
-        Point(delta, world.height - delta)
-        ]
+    # delta = 60
+    # corners = [
+    #     Point(delta, delta),
+    #     Point(world.width - delta, delta),
+    #     Point(world.width - delta, world.height - delta),
+    #     Point(delta, world.height - delta)
+    #     ]
 
-    return min(corners, key=lambda c: me.get_distance_to_unit(c))
+    # return min(corners, key=lambda c: me.get_distance_to_unit(c))
+
+    best_zone = get_best_zone(me, world)
+    return Point(best_zone.x, best_zone.y)
 
 
 def enemy_is_going_hit_only_me(me, enemy, enemies):
