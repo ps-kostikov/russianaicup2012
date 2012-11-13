@@ -42,6 +42,8 @@ class Zone:
         self.r = r
 
     def get_point_to_move(self, tank):
+        # FIXME
+        return Point(self.x, self.y)
 
         if math.hypot(tank.x - self.x, tank.y - self.y) <= self.r:
             return Point(tank.x, tank.y)
