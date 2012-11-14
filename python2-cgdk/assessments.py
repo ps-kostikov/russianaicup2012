@@ -158,7 +158,8 @@ def is_bonus_usefull(me, bonus, world):
         return goal_damage
 
     # 0.5 for brave
-    damage = 0.5 * sum([count_damage(bonus, e) for e in enemies])
+    brave_coeff = (len(enemies) - len(teammates) + 1) * 0.2
+    damage = brave_coeff * sum([count_damage(bonus, e) for e in enemies])
 
     #  20. / 100. = 0.2 - damage from one full hit
     # 150. - base recharge tick time

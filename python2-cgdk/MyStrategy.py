@@ -150,7 +150,7 @@ def fire_to(goal, me, world, move):
 
 
 def move_to_unit(goal, me, world, move):
-    min_dist = 5
+    min_dist = 20
     if math.hypot(goal.x - me.x, goal.y - me.y) < min_dist:
         return False
 
@@ -247,16 +247,12 @@ def has_place(me, world, front, left):
 
 
 def avoid_shell(shell, me, world, move):
-    # print "shell = ", shell.x, shell.y
     angle_for_simple = math.pi / 4
     vsx = shell.speedX
     vsy = shell.speedY
 
     vmx = math.cos(me.angle)
     vmy = math.sin(me.angle)
-
-    # print "VS = ", vsx, vsy
-    # print "VM = ", vmx, vmy
 
     m_size = math.hypot(me.width, me.height)
 
@@ -351,55 +347,6 @@ def avoid_shells(me, world, move):
     return avoid_shell(shell_to_avoid, me, world, move)
 
 
-# def is_bonus_usefull(me, bonus):
-#     if bonus.type == BonusType.AMMO_CRATE:
-#         return True
-
-#     live_percentage = float(me.crew_health) / float(me.crew_max_health)
-#     hull_percentage = float(me.hull_durability) / float(me.hull_max_durability)
-
-#     if bonus.type == BonusType.MEDIKIT and live_percentage + 0.4 < hull_percentage:
-#         return False
-
-#     if bonus.type == BonusType.REPAIR_KIT and hull_percentage + 0.4 < live_percentage:
-#         return False
-
-#     return True
-
-
-# def get_bonus_value(me, bonus):
-#     '''between 1 and 10'''
-
-#     if bonus.type == BonusType.AMMO_CRATE:
-#         return max(1, 9 - me.premium_shell_count)
-
-#     live_percentage = float(me.crew_health) / float(me.crew_max_health)
-#     hull_percentage = float(me.hull_durability) / float(me.hull_max_durability)
-
-#     if bonus.type == BonusType.MEDIKIT:
-#         return 10 * (1 - live_percentage) + 2
-
-#     if bonus.type == BonusType.AMMO_CRATE:
-#         return 10 * (1 - hull_percentage) + 1
-#     return 1
-
-
-# def get_time_to_bonus(me, bonus):
-#     angle = abs(me.get_angle_to_unit(bonus))
-#     if angle > math.pi / 2:
-#         angle = math.pi - angle
-#     time_to_turn = angle * 1.5
-#     time_to_ride = me.get_distance_to_unit(bonus) / TANK_AVERAGE_SPEED
-#     return time_to_ride + time_to_turn
-
-
-# def get_bonus_rating(me, bonus):
-#     time = get_time_to_bonus(me, bonus)
-#     if time < 0.01:
-#         time = 0.01
-#     return get_bonus_value(me, bonus) / time
-
-
 def get_bonus_rating(me, bonus):
     time = assessments.time_to_get(me, bonus)
     if time < 0.01:
@@ -419,7 +366,7 @@ def get_best_zone(me, world):
         # 0 -> -2.
         # norm -> 0.
         # max -> -1.
-        min_norm_dist = 200
+        min_norm_dist = 120
         max_norm_dist = 400
         max_dist = 1000
         if distance < min_norm_dist:
@@ -498,9 +445,6 @@ def avoid_possible_shells(me, world, move):
     if len(enemies) == 0:
         return False
 
-    # for e in enemies:
-    #     if e.id != 5:
-    #         print e.id, time_before_hit(tank=e, target=me)
     bother_time = 40
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
     very_dangerous_enemies = filter(
@@ -509,13 +453,7 @@ def avoid_possible_shells(me, world, move):
         return False
 
     enemy = very_dangerous_enemies[0]
-    # enemy = min(enemies, key=lambda e: time_before_enemy_hit_me(me, e))
 
-    # time = time_before_enemy_hit_me(me, enemy)
-    # if time > 100:
-    #     return False
-
-    # dist = me.get_distance_to_unit(enemy)
     absolute_angle_to_me = math.atan2(me.y - enemy.y, me.x - enemy.x)
 
     turret_angle_to_me = enemy.get_turret_angle_to_unit(me)
@@ -524,8 +462,6 @@ def avoid_possible_shells(me, world, move):
     if rad_to_degree(turret_angle_to_me) < -10:
         turret_angle_to_me = degree_to_rad(-10)
 
-    # print '= turret_angle_to_me = ', rad_to_degree(turret_angle_to_me)
-    # print '= absolute_angle_to_me = ', rad_to_degree(absolute_angle_to_me)
     possible_shell_angle = absolute_angle_to_me - turret_angle_to_me
 
     spx = math.cos(possible_shell_angle)
@@ -539,7 +475,6 @@ def avoid_possible_shells(me, world, move):
     if is_goal_blocked(possible_shell, me, world):
         return False
 
-    # log_print('avoid possible shell')
     return avoid_shell(possible_shell, me, world, move)
 
 
