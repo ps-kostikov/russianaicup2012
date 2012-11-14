@@ -72,7 +72,8 @@ def make_zone(bonus, tank):
 
 
 def get_zones():
-    delta = 90. / math.sqrt(2.)
+    # delta = 90. / math.sqrt(2.)
+    delta = 80.
     min_x, min_y = delta, delta
     max_x, max_y = 1280 - delta, 800 - delta
 
@@ -458,7 +459,12 @@ def get_best_zone(me, world):
 def get_strategic_goal(me, world):
     enemies = all_enemies(world)
 
+    team = all_teammates_without_me(world, me)
     usefull_bonuses = filter(lambda b: assessments.is_bonus_usefull(me, b, world), world.bonuses)
+    for teammate in team:
+        usefull_bonuses = filter(
+                lambda b: get_bonus_rating(me, b) > get_bonus_rating(teammate, b), usefull_bonuses)
+
     if len(usefull_bonuses) > 0:
         bonus = max(usefull_bonuses, key=lambda b: get_bonus_rating(me, b))
         return make_zone(bonus, me)

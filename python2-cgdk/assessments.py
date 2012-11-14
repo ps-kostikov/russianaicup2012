@@ -121,7 +121,8 @@ def get_bonus_factor(tank, bonus):
     else:
         new_tank.premium_shell_count += 3
 
-    return get_power(new_tank) - get_power(tank)
+    # 0.1 for brave
+    return get_power(new_tank) - get_power(tank) + 0.1
 
 
 def time_to_get(tank, unit):
@@ -156,7 +157,8 @@ def is_bonus_usefull(me, bonus, world):
                 return 0.
         return goal_damage
 
-    damage = sum([count_damage(bonus, e) for e in enemies])
+    # 0.5 for brave
+    damage = 0.5 * sum([count_damage(bonus, e) for e in enemies])
 
     #  20. / 100. = 0.2 - damage from one full hit
     # 150. - base recharge tick time
