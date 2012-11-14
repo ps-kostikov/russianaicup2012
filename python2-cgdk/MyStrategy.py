@@ -70,16 +70,28 @@ def make_zone(bonus, tank):
     return Zone(bonus.x, bonus.y, r)
 
 
+
 def get_zones():
-    base = constants.ZONE_RADIUS
+    delta = 90. / math.sqrt(2.)
+    min_x, min_y = delta, delta
+    max_x, max_y = 1280 - delta, 800 - delta
+
+    w_parts_number = int((max_x - min_x) / (2. * constants.ZONE_RADIUS))
+    w_step = (max_x - min_x) / w_parts_number
+
+    h_parts_number = int((max_y - min_y) / (2. * constants.ZONE_RADIUS))
+    h_step = (max_y - min_y) / h_parts_number
+
+    base = delta
     x = y = base
     res = []
-    while x <= constants.WORLD_WIDTH:
-        while y <= constants.WORLD_HEIGHT:
+    while x <= max_x + 1.:
+        while y <= max_y + 1.:
             res.append(Zone(x, y))
-            y += constants.ZONE_RADIUS * 2
+            y += h_step
         y = base
-        x += constants.ZONE_RADIUS * 2
+        x += w_step
+
     return res
 
 
