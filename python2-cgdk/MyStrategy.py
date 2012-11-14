@@ -412,6 +412,28 @@ def get_best_zone(me, world):
             zones)
     enemies = all_enemies(world)
     team_power = get_team_power(world)
+    team = all_teammates_without_me(world, me)
+
+    def team_addition_value(distance):
+        # 0 -> -2.
+        # norm -> 0.
+        # max -> -1.
+        min_norm_dist = 200
+        max_norm_dist = 400
+        max_dist = 1000
+        if distance < min_norm_dist:
+            return (2. * distance) / float(min_norm_dist) - 2.
+        elif min_norm_dist <= distance <= max_norm_dist:
+            return 0.
+        else:
+            return (max_norm_dist - distance) / (max_dist - max_norm_dist)
+
+    def team_addition(zone):
+        res = 0
+        for t in team:
+            res += team_addition_value(math.hypot(zone.x - t.x, zone.y - t.y))
+        return res
+
 
     def damage(zone):
         res = 0
@@ -428,7 +450,7 @@ def get_best_zone(me, world):
 
     def value(zone):
         enemy_power = 1 - team_power
-        return team_power * my_damage(zone) - enemy_power * damage(zone)
+        return 0.3 * team_addition(zone) + team_power * my_damage(zone) - enemy_power * damage(zone)
 
     return max(neighbour_zones, key=lambda z: value(z))
 
