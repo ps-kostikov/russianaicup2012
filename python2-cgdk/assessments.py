@@ -73,7 +73,12 @@ def get_power(tank):
     premium_reserve = min(premium_max, tank.premium_shell_count)
     premium = float(premium_reserve) / float(premium_max)
 
-    return min(life, hull) * \
+    if life < hull:
+        life_coef = 0.7 * life + 0.3 * hull
+    else:
+        life_coef = 0.3 * life + 0.7 * hull
+
+    return life_coef * \
             0.5 * (1. + life) * \
             (1. + premium)
 
