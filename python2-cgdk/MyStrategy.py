@@ -91,7 +91,7 @@ def get_enemy(me, world):
 
 
 def should_give_way(me, world):
-    if world.tick > 2:
+    if world.tick > 5:
         return False
     team = all_teammates(world)
     max_id = max([t.id for t in team])
