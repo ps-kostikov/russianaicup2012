@@ -132,7 +132,8 @@ def is_bonus_usefull(me, bonus, world):
     factor = get_bonus_factor(me, bonus)
     time = time_to_get(me, bonus)
 
-    enemies = all_enemies(world)
+    enemies = utils.all_enemies(world)
+    teammates = utils.all_teammates_without_me(world, me)
 
     def count_damage(goal, enemy):
         if abs(geometry.get_angle(
@@ -143,7 +144,7 @@ def is_bonus_usefull(me, bonus, world):
             x, y = geometry.get_nearest_point(me.x, me.y, goal.x, goal.y, enemy.x, enemy.y)
 
         goal_damage = damage_probability(enemy.x, enemy.y, x, y)
-        for e in enemies:
+        for e in enemies + teammates:
             if utils.is_teammate(e, enemy):
                 continue
             if damage_probability(enemy.x, enemy.y, e.x, e.y) > goal_damage:

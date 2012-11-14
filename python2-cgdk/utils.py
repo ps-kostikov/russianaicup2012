@@ -53,6 +53,10 @@ def all_teammates(world):
     return filter(lambda t: alive(t) and t.teammate, world.tanks)
 
 
+def all_teammates_without_me(world, me):
+    return filter(lambda t: t.id != me.id, all_teammates(world))
+
+
 def get_turret_speed(tank):
     '''return turret speed in rad/tick'''
     live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
