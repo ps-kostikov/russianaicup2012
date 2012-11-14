@@ -12,6 +12,7 @@ import utils
 from constants import *
 import constants
 from assessments import *
+import assessments
 
 index = 0
 
@@ -337,54 +338,60 @@ def avoid_shells(me, world, move):
     return avoid_shell(shell_to_avoid, me, world, move)
 
 
-def is_bonus_usefull(me, bonus):
-    if bonus.type == BonusType.AMMO_CRATE:
-        return True
+# def is_bonus_usefull(me, bonus):
+#     if bonus.type == BonusType.AMMO_CRATE:
+#         return True
 
-    live_percentage = float(me.crew_health) / float(me.crew_max_health)
-    hull_percentage = float(me.hull_durability) / float(me.hull_max_durability)
+#     live_percentage = float(me.crew_health) / float(me.crew_max_health)
+#     hull_percentage = float(me.hull_durability) / float(me.hull_max_durability)
 
-    if bonus.type == BonusType.MEDIKIT and live_percentage + 0.4 < hull_percentage:
-        return False
+#     if bonus.type == BonusType.MEDIKIT and live_percentage + 0.4 < hull_percentage:
+#         return False
 
-    if bonus.type == BonusType.REPAIR_KIT and hull_percentage + 0.4 < live_percentage:
-        return False
+#     if bonus.type == BonusType.REPAIR_KIT and hull_percentage + 0.4 < live_percentage:
+#         return False
 
-    return True
-
-
-def get_bonus_value(me, bonus):
-    '''between 1 and 10'''
-
-    if bonus.type == BonusType.AMMO_CRATE:
-        return max(1, 9 - me.premium_shell_count)
-
-    live_percentage = float(me.crew_health) / float(me.crew_max_health)
-    hull_percentage = float(me.hull_durability) / float(me.hull_max_durability)
-
-    if bonus.type == BonusType.MEDIKIT:
-        return 10 * (1 - live_percentage) + 2
-
-    if bonus.type == BonusType.AMMO_CRATE:
-        return 10 * (1 - hull_percentage) + 1
-    return 1
+#     return True
 
 
-def get_time_to_bonus(me, bonus):
-    angle = abs(me.get_angle_to_unit(bonus))
-    if angle > math.pi / 2:
-        angle = math.pi - angle
-    time_to_turn = angle * 1.5
-    time_to_ride = me.get_distance_to_unit(bonus) / TANK_AVERAGE_SPEED
-    return time_to_ride + time_to_turn
+# def get_bonus_value(me, bonus):
+#     '''between 1 and 10'''
+
+#     if bonus.type == BonusType.AMMO_CRATE:
+#         return max(1, 9 - me.premium_shell_count)
+
+#     live_percentage = float(me.crew_health) / float(me.crew_max_health)
+#     hull_percentage = float(me.hull_durability) / float(me.hull_max_durability)
+
+#     if bonus.type == BonusType.MEDIKIT:
+#         return 10 * (1 - live_percentage) + 2
+
+#     if bonus.type == BonusType.AMMO_CRATE:
+#         return 10 * (1 - hull_percentage) + 1
+#     return 1
+
+
+# def get_time_to_bonus(me, bonus):
+#     angle = abs(me.get_angle_to_unit(bonus))
+#     if angle > math.pi / 2:
+#         angle = math.pi - angle
+#     time_to_turn = angle * 1.5
+#     time_to_ride = me.get_distance_to_unit(bonus) / TANK_AVERAGE_SPEED
+#     return time_to_ride + time_to_turn
+
+
+# def get_bonus_rating(me, bonus):
+#     time = get_time_to_bonus(me, bonus)
+#     if time < 0.01:
+#         time = 0.01
+#     return get_bonus_value(me, bonus) / time
 
 
 def get_bonus_rating(me, bonus):
-    time = get_time_to_bonus(me, bonus)
+    time = assessments.time_to_get(me, bonus)
     if time < 0.01:
         time = 0.01
-    return get_bonus_value(me, bonus) / time
-
+    return get_bonus_factor(me, bonus) / time
 
 
 def get_best_zone(me, world):
@@ -417,16 +424,20 @@ def get_best_zone(me, world):
 def get_strategic_goal(me, world):
     enemies = all_enemies(world)
 
-    if len(enemies) <= 1:
-        if len(world.bonuses) > 0:
-            bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
-            return make_zone(bonus, me)
+    usefull_bonuses = filter(lambda b: assessments.is_bonus_usefull(me, b, world), world.bonuses)
+    if len(usefull_bonuses) > 0:
+        bonus = max(usefull_bonuses, key=lambda b: get_bonus_rating(me, b))
+        return make_zone(bonus, me)
+    # if len(enemies) <= 1:
+    #     if len(world.bonuses) > 0:
+    #         bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
+    #         return make_zone(bonus, me)
 
-    if len(world.bonuses) > 0:
-        bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
-        min_enemy_dist = min([me.get_distance_to_unit(e) for e in (enemies)])
-        if me.get_distance_to_unit(bonus) < min_enemy_dist:
-            return make_zone(bonus, me)
+    # if len(world.bonuses) > 0:
+    #     bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
+    #     min_enemy_dist = min([me.get_distance_to_unit(e) for e in (enemies)])
+    #     if me.get_distance_to_unit(bonus) < min_enemy_dist:
+    #         return make_zone(bonus, me)
 
     return get_best_zone(me, world)
 

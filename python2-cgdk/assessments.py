@@ -3,10 +3,13 @@ Approximate functions for value assessments
 '''
 
 import math
+from copy import copy
 
 from model.Tank import Tank
+from model.BonusType import BonusType
 
 from geometry import *
+import geometry
 import constants
 from utils import *
 import utils
@@ -102,3 +105,55 @@ def damage_probability(tank_x, tank_y, goal_x, goal_y):
         return 1. - (1. - coeff) * (dist / short_dist)
 
     return coeff * (1. - (dist - short_dist) / (max_dist - short_dist))
+
+
+def get_bonus_factor(tank, bonus):
+    new_tank = copy(tank)
+    if bonus.type == BonusType.MEDIKIT:
+        new_tank.crew_health = min(new_tank.crew_max_health, new_tank.crew_health + 35)
+    elif bonus.type == BonusType.REPAIR_KIT:
+        new_tank.hull_durability = min(new_tank.hull_max_durability, new_tank.hull_durability + 50)
+    else:
+        new_tank.premium_shell_count += 3
+
+    return get_power(new_tank) - get_power(tank)
+
+
+def time_to_get(tank, unit):
+    angle = abs(tank.get_angle_to_unit(unit))
+    if angle > math.pi / 2:
+        angle = math.pi - angle
+    time_to_turn = angle * 1.5
+    time_to_ride = tank.get_distance_to_unit(unit) / TANK_AVERAGE_SPEED
+    return time_to_ride + time_to_turn
+
+
+def is_bonus_usefull(me, bonus, world):
+    factor = get_bonus_factor(me, bonus)
+    time = time_to_get(me, bonus)
+
+    enemies = all_enemies(world)
+
+    def count_damage(goal, enemy):
+        if abs(geometry.get_angle(
+                enemy.x - me.x, enemy.y - me.y, enemy.x - goal.x, enemy.y - goal.y)) < math.pi / 2:
+            x, y = goal.x, goal.y
+        else:
+            # FIXME more correct here cause me and goal is not equivalent here
+            x, y = geometry.get_nearest_point(me.x, me.y, goal.x, goal.y, enemy.x, enemy.y)
+
+        goal_damage = damage_probability(enemy.x, enemy.y, x, y)
+        for e in enemies:
+            if utils.is_teammate(e, enemy):
+                continue
+            if damage_probability(enemy.x, enemy.y, e.x, e.y) > goal_damage:
+                return 0.
+        return goal_damage
+
+    damage = sum([count_damage(bonus, e) for e in enemies])
+
+    #  20. / 100. = 0.2 - damage from one full hit
+    # 150. - base recharge tick time
+    k = 0.2 / 150.
+
+    return factor > k * damage * time

@@ -39,6 +39,10 @@ def alive(tank):
     return tank.crew_health > 0 and tank.hull_durability > 0
 
 
+def is_teammate(tank, other_tank):
+    return tank.player_name == other_tank.player_name
+
+
 def all_enemies(world):
     '''alive tanks not in my team'''
     return filter(lambda t: alive(t) and not t.teammate, world.tanks)
