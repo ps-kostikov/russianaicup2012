@@ -90,8 +90,17 @@ def get_enemy(me, world):
     return max(enemies, key=lambda e: efficiency(e))
 
 
+def should_give_way(me, world):
+    if world.tick > 2:
+        return False
+    team = all_teammates(world)
+    max_id = max([t.id for t in team])
+    return me.id < max_id
+
+
 def fire_to(goal, me, world, move):
-    max_premium_distance = math.hypot(world.width, world.height) / 2
+    # max_premium_distance = math.hypot(world.width, world.height) / 2
+    max_premium_distance = 600
 
     distance = me.get_distance_to_unit(goal)
     # goal_size = min(goal.width, goal.height)
@@ -116,6 +125,8 @@ def fire_to(goal, me, world, move):
     if abs(turret_angle) > max_fire_angle:
         move.fire_type = FireType.NONE
     elif is_goal_blocked(possible_shell, goal, world):
+        move.fire_type = FireType.NONE
+    elif should_give_way(me, world):
         move.fire_type = FireType.NONE
     else:
         if distance > max_premium_distance:
