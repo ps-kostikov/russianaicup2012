@@ -157,8 +157,8 @@ def is_bonus_usefull(me, bonus, world):
                 return 0.
         return goal_damage
 
-    # 0.5 for brave
-    brave_coeff = max(0.4, (len(enemies) - len(teammates) + 1) * 0.2)
+    # brave_coeff = max(0.4, (len(enemies) - len(teammates) + 1) * 0.2)
+    brave_coeff = 0.8
     damage = brave_coeff * sum([count_damage(bonus, e) for e in enemies])
 
     #  20. / 100. = 0.2 - damage from one full hit
@@ -166,3 +166,43 @@ def is_bonus_usefull(me, bonus, world):
     k = 0.2 / 150.
 
     return factor > k * damage * time
+
+
+def shell_damage(shell, tank):
+    '''return related damage depends of angle of hit'''
+    min_value = 0.5
+    max_value = 1.
+    pessimistic_tank = copy(tank)
+    pessimistic_tank.width += 10
+    pessimistic_tank.height += 10
+    front, right, back, left = utils.get_borders(pessimistic_tank)
+
+    next_shell_x = shell.x + shell.speedX * 1000.
+    next_shell_y = shell.y + shell.speedY * 1000.
+
+    borders_with_intersections = [(b, 
+            geometry.intervals_intersection(
+                    b[0], b[1], b[2], b[3], shell.x, shell.y, next_shell_x, next_shell_y)) for 
+            b in front, right, back, left]
+
+    borders_with_intersections = filter(lambda bi: bi[1] is not None, borders_with_intersections)
+    if not borders_with_intersections:
+        return min_value
+    border = min(borders_with_intersections, key=lambda b: math.hypot(b[1][0] - shell.x, b[1][1] - shell.y))[0]
+
+    angle = geometry.get_angle(border[0] - border[2], border[1] - border[3], shell.speedX, shell.speedY)
+    if angle > math.pi / 2:
+        angle = math.pi - angle
+
+    angle = geometry.rad_to_degree(angle)
+    return max_value + ((min_value - max_value) * angle) / 90.
+    # print angle
+    # if border == front:
+    #     print 'front'
+    # if border == right:
+    #     print 'right'
+    # if border == back:
+    #     print 'back'
+    # if border == left:
+    #     print 'left'
+    # return 1.

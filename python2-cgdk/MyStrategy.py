@@ -13,6 +13,7 @@ from constants import *
 import constants
 from assessments import *
 import assessments
+import prediction
 
 index = 0
 
@@ -147,6 +148,8 @@ def fire_to(goal, me, world, move):
             move.fire_type = FireType.REGULAR
         else:
             move.fire_type = FireType.PREMIUM_PREFERRED
+
+    # move.fire_type = FireType.NONE
 
 
 def move_to_unit(goal, me, world, move):
@@ -329,6 +332,22 @@ def avoid_shell(shell, me, world, move):
         return True
 
 
+def new_best_avoid_shell(shell, me, world, move):
+    strategies = [
+            (1., 1.),
+            (-1., -1.),
+            (1., 0.5),
+            (0.5, 1),
+            (-1., -0.5),
+            (-0.5, -1.),
+            (0.75, -1.),
+            (-1., 0.75),
+            ]
+
+    stategy = min(strategies, key=lambda s: prediction.damage(me, shell, world, s[0], s[1]))
+    move.left_track_power = stategy[0]
+    move.right_track_power = stategy[1]
+
 def avoid_shells(me, world, move):
 
     dangerous_shells = filter(lambda s: is_shell_dangerous(me, s, world), world.shells)
@@ -345,6 +364,7 @@ def avoid_shells(me, world, move):
         shell_to_avoid = min(shells_to_avoid, key=lambda s: time_to_shell_hit(me, s))
 
     return avoid_shell(shell_to_avoid, me, world, move)
+    # return new_best_avoid_shell(shell_to_avoid, me, world, move)
 
 
 def get_bonus_rating(me, bonus):
@@ -398,7 +418,7 @@ def get_best_zone(me, world):
 
     def value(zone):
         enemy_power = 1 - team_power
-        return 0.3 * team_addition(zone) + team_power * my_damage(zone) - enemy_power * damage(zone)
+        return 0.3 * team_addition(zone) + team_power * my_damage(zone) - 1.2 * enemy_power * damage(zone)
 
     return max(neighbour_zones, key=lambda z: value(z))
 
