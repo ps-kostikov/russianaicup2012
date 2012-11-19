@@ -120,7 +120,10 @@ def is_goal_blocked_by(shell, goal, blocker):
 
 
 def get_blocker(shell, goal, world):
-    blockers = world.bonuses + filter(lambda t: not alive(t), world.tanks) + filter(lambda t: t.teammate, world.tanks)
+    blockers = world.bonuses + \
+            filter(lambda t: not alive(t), world.tanks) + \
+            filter(lambda t: t.teammate, world.tanks) + \
+            world.obstacles
     blockers = filter(lambda o: o.get_distance_to_unit(shell) > 0.01 and
             o.get_distance_to_unit(goal) > 0.01, blockers)
 
@@ -148,5 +151,24 @@ def make_possible_shell(tank):
             angle=shell_angle, angular_speed=0)
 
 
+def angle_fork_between_two(goal, tank1, tank2):
+    angle1 = math.atan2(goal.y - tank1.y, goal.x - tank1.x)
+    angle2 = math.atan2(goal.y - tank2.y, goal.x - tank2.x)
+
+    res = max(angle1, angle2) - min(angle1, angle2)
+    while res > math.pi:
+        res -= math.pi
+    return res
+
+
+def angle_fork(goal, tanks):
+    '''return max angle in rads'''
+    res = 0.
+    for i in range(len(tanks)):
+        for j in range(len(tanks)):
+            if i <= j:
+                continue
+            res = max(res, angle_fork_between_two(goal, tanks[i], tanks[j]))
+    return res
 
 

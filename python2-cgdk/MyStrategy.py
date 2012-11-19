@@ -37,6 +37,12 @@ def within_world(x, y, world):
     return Point(x, y).within(world)
 
 
+def within_unit(x, y, unit):
+    # FIXME use unit angle
+    return unit.x - unit.width / 2. <= x <= unit.x + unit.width / 2. and \
+            unit.y - unit.height / 2. <= y <= unit.y + unit.height / 2.
+
+
 class Zone:
     def __init__(self, x, y, r=constants.ZONE_RADIUS):
         self.x = x
@@ -72,7 +78,7 @@ def make_zone(bonus, tank):
 
 
 
-def get_zones():
+def get_zones(world):
     # delta = 90. / math.sqrt(2.)
     delta = 80.
     min_x, min_y = delta, delta
@@ -89,7 +95,13 @@ def get_zones():
     res = []
     while x <= max_x + 1.:
         while y <= max_y + 1.:
-            res.append(Zone(x, y))
+            append = True
+            for obstacle in world.obstacles:
+                if within_unit(x, y, obstacle):
+                    append = False
+                    break
+            if append:
+                res.append(Zone(x, y))
             y += h_step
         y = base
         x += w_step
@@ -375,33 +387,53 @@ def get_bonus_rating(me, bonus):
 
 
 def get_best_zone(me, world):
-    zones = get_zones()
+    zones = get_zones(world)
     neighbour_zones = filter(lambda z: me.get_distance_to(z.x, z.y) < constants.ZONE_RADIUS * 2 * 1.6,
             zones)
     enemies = all_enemies(world)
     team_power = get_team_power(world)
     team = all_teammates_without_me(world, me)
 
-    def team_addition_value(distance):
-        # 0 -> -2.
-        # norm -> 0.
-        # max -> -1.
-        min_norm_dist = 120
-        max_norm_dist = 400
-        max_dist = 1000
-        if distance < min_norm_dist:
-            return (2. * distance) / float(min_norm_dist) - 2.
-        elif min_norm_dist <= distance <= max_norm_dist:
+    # def team_addition_value(distance):
+    #     # 0 -> -2.
+    #     # norm -> 0.
+    #     # max -> -1.
+    #     min_norm_dist = 120
+    #     max_norm_dist = 400
+    #     max_dist = 1000
+    #     if distance < min_norm_dist:
+    #         return (2. * distance) / float(min_norm_dist) - 2.
+    #     elif min_norm_dist <= distance <= max_norm_dist:
+    #         return 0.
+    #     else:
+    #         return (max_norm_dist - distance) / (max_dist - max_norm_dist)
+
+    # def team_addition(zone):
+    #     res = 0
+    #     for t in team:
+    #         res += team_addition_value(math.hypot(zone.x - t.x, zone.y - t.y))
+    #     return res
+
+    def angle_to_coeff(angle):
+        limit = math.pi / 2.
+        if angle > limit:
+            return 2.
+        if angle < 0:
+            return 1.
+        return 1. + angle / limit
+
+    def enemy_addition_value(distance):
+        min_dist = 90.
+        if distance > min_dist:
             return 0.
-        else:
-            return (max_norm_dist - distance) / (max_dist - max_norm_dist)
+        return -2. + (2. * distance) / min_dist
 
-    def team_addition(zone):
+    def enemy_addition(zone):
         res = 0
-        for t in team:
-            res += team_addition_value(math.hypot(zone.x - t.x, zone.y - t.y))
-        return res
-
+        for e in enemies:
+            res += enemy_addition_value(math.hypot(zone.x - e.x, zone.y - e.y))
+        coef = angle_to_coeff(utils.angle_fork(zone, enemies))
+        return res * coef
 
     def damage(zone):
         res = 0
@@ -414,13 +446,25 @@ def get_best_zone(me, world):
         power = get_power(me)
         for e in enemies:
             res += power * damage_probability(zone.x, zone.y, e.x, e.y)
-        return res
+
+        angle_fork_sum = 0.
+        for e in enemies:
+            angle_fork_sum += utils.angle_fork(e, [zone] + team)
+        average_angle_fork = angle_fork_sum / len(enemies)
+        coef = angle_to_coeff(average_angle_fork)
+        return res * coef
 
     def value(zone):
         enemy_power = 1 - team_power
-        return 0.3 * team_addition(zone) + team_power * my_damage(zone) - 1.2 * enemy_power * damage(zone)
+        return enemy_addition(zone) + \
+                team_power * my_damage(zone) - \
+                1.2 * enemy_power * damage(zone)
 
-    return max(neighbour_zones, key=lambda z: value(z))
+                # 0.3 * team_addition(zone) + \
+
+
+    res = max(neighbour_zones, key=lambda z: value(z))
+    return res
 
 
 def get_strategic_goal(me, world):
@@ -514,9 +558,21 @@ def help_turret(me, move):
 
 class MyStrategy:
     def __init__(self):
-        pass
+        self.health = 100.
+        self.predicted_damage = 0.
 
     def move(self, me, world, move):
+        # for shell in world.shells:
+        #     next_shell = prediction.next_shell(shell, world)
+        #     if utils.is_goal_blocked_by(shell, next_shell, me):
+        #         self.predicted_damage = assessments.shell_damage(shell, me)
+        #         print 'predicted_damage ', self.predicted_damage
+
+        # if self.health > me.crew_health:
+        #     print 'get damage ', self.health - me.crew_health
+
+        # self.health = me.crew_health
+
 
         enemy = get_enemy(me, world)
 

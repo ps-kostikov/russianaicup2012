@@ -7,6 +7,7 @@ from copy import copy
 
 from model.Tank import Tank
 from model.BonusType import BonusType
+from model.ShellType import ShellType
 
 from geometry import *
 import geometry
@@ -169,20 +170,21 @@ def is_bonus_usefull(me, bonus, world):
 
 
 def shell_damage(shell, tank):
-    '''return related damage depends of angle of hit'''
+    '''return health damage'''
     min_value = 0.5
     max_value = 1.
     pessimistic_tank = copy(tank)
     pessimistic_tank.width += 10
     pessimistic_tank.height += 10
     front, right, back, left = utils.get_borders(pessimistic_tank)
+    # front, right, back, left = utils.get_borders(tank)
 
     next_shell_x = shell.x + shell.speedX * 1000.
     next_shell_y = shell.y + shell.speedY * 1000.
 
-    borders_with_intersections = [(b, 
+    borders_with_intersections = [(b,
             geometry.intervals_intersection(
-                    b[0], b[1], b[2], b[3], shell.x, shell.y, next_shell_x, next_shell_y)) for 
+                    b[0], b[1], b[2], b[3], shell.x, shell.y, next_shell_x, next_shell_y)) for
             b in front, right, back, left]
 
     borders_with_intersections = filter(lambda bi: bi[1] is not None, borders_with_intersections)
@@ -193,9 +195,19 @@ def shell_damage(shell, tank):
     angle = geometry.get_angle(border[0] - border[2], border[1] - border[3], shell.speedX, shell.speedY)
     if angle > math.pi / 2:
         angle = math.pi - angle
+    angle = math.pi / 2. - angle
 
     angle = geometry.rad_to_degree(angle)
-    return max_value + ((min_value - max_value) * angle) / 90.
+    if shell.type == ShellType.REGULAR:
+        ricochet_angle = 60.
+        if angle > ricochet_angle:
+            return 0.
+        else:
+            # return 20.
+            return (max_value + ((min_value - max_value) * angle) / ricochet_angle)
+    else:
+        # return 35.
+        return 2. * (max_value + ((min_value - max_value) * angle) / 90.)
     # print angle
     # if border == front:
     #     print 'front'
