@@ -32,13 +32,34 @@ def next_shell(shell, world):
     return new_shell
 
 
+def cross_boundaries(tank, world):
+    tank_borders = utils.get_borders(tank)
+
+    for world_border in utils.get_world_borders():
+        for tank_border in tank_borders:
+            x1, y1, x2, y2 = tank_border
+            if geometry.are_intervals_intersect(x1, y1, x2, y2, *world_border):
+                return True
+
+    for obstacle in world.obstacles:
+        for border in utils.get_borders(obstacle):
+            for tank_border in tank_borders:
+                x1, y1, x2, y2 = tank_border
+                if geometry.are_intervals_intersect(x1, y1, x2, y2, *border):
+                    return True
+
+    return False
+
+
 def next_tank(tank, world, move_left, move_right):
-    # FIXME add life correction
     if move_left < 0:
         move_left *= 0.75
 
     if move_right < 0:
         move_right *= 0.75
+
+    move_left *= utils.life_factor(tank)
+    move_right *= utils.life_factor(tank)
 
     a = 0.1
     nsx = tank.speedX + a * (move_right + move_left) * math.cos(tank.angle)
@@ -64,6 +85,10 @@ def next_tank(tank, world, move_left, move_right):
             teammate=tank.teammate,
             type=tank.type
             )
+
+    if cross_boundaries(new, world):
+        new.x = tank.x
+        new.y = tank.y
     return new
 
 
@@ -99,7 +124,7 @@ def damage(tank, shell, world, move_left, move_right):
         if touch_next_tick(shell, shell_next, tank_next):
             return assessments.shell_damage(shell, tank_next)
 
-        if assessments.shell_damage(shell, tank_next) < 0.01:
+        if assessments.shell_damage(shell, tank_next) < 0.0001:
             return 0.
 
     return 0.

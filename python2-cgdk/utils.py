@@ -5,7 +5,9 @@ Precise functions without any heuristics
 from model.Unit import Unit
 
 from geometry import *
+import geometry
 from constants import *
+import constants
 
 
 def get_borders(unit):
@@ -35,6 +37,18 @@ def get_borders(unit):
     return res
 
 
+def get_world_borders():
+    x = constants.WORLD_WIDTH / 2.
+    y = constants.WORLD_HEIGHT / 2.
+    fake_world_unit = Unit(0,
+            width=constants.WORLD_WIDTH,
+            height=constants.WORLD_HEIGHT,
+            x=x, y=y,
+            speed_x=0, speed_y=0,
+            angle=0, angular_speed=0)
+    return get_borders(fake_world_unit)
+
+
 def alive(tank):
     return tank.crew_health > 0 and tank.hull_durability > 0
 
@@ -57,10 +71,15 @@ def all_teammates_without_me(world, me):
     return filter(lambda t: t.id != me.id, all_teammates(world))
 
 
+def life_factor(tank):
+    '''return factor that reduce turret and track speeds'''
+    live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
+    return 0.5 * (1. + live_percentage)
+
+
 def get_turret_speed(tank):
     '''return turret speed in rad/tick'''
-    live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
-    return degree_to_rad(0.5 * (1 + live_percentage))
+    return degree_to_rad(life_factor(tank))
 
 
 def time_before_hit(tank, target):
@@ -170,5 +189,3 @@ def angle_fork(goal, tanks):
                 continue
             res = max(res, angle_fork_between_two(goal, tanks[i], tanks[j]))
     return res
-
-

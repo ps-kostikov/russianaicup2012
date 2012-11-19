@@ -169,13 +169,31 @@ def is_bonus_usefull(me, bonus, world):
     return factor > k * damage * time
 
 
+def coeff_by_angle(shell, angle):
+    '''angle in degrees'''
+    min_value, max_value = 0., 1.
+    if shell.type == ShellType.REGULAR:
+        ricochet_angle = 60.
+        if angle > ricochet_angle:
+            return 0.
+        else:
+            return (max_value + ((min_value - max_value) * angle) / ricochet_angle)
+    else:
+        return 2. * (max_value + ((min_value - max_value) * angle) / 90.)
+
+
+def coeff_by_dist_factor(dist_factor):
+    '''dist - from 0. to 1.'''
+    return 1. - 0.5 * dist_factor
+
+
 def shell_damage(shell, tank):
     '''return health damage'''
     min_value = 0.5
     max_value = 1.
     pessimistic_tank = copy(tank)
-    pessimistic_tank.width += 10
-    pessimistic_tank.height += 10
+    pessimistic_tank.width *= 1.1
+    pessimistic_tank.height *= 1.1
     front, right, back, left = utils.get_borders(pessimistic_tank)
     # front, right, back, left = utils.get_borders(tank)
 
@@ -190,24 +208,21 @@ def shell_damage(shell, tank):
     borders_with_intersections = filter(lambda bi: bi[1] is not None, borders_with_intersections)
     if not borders_with_intersections:
         return min_value
-    border = min(borders_with_intersections, key=lambda b: math.hypot(b[1][0] - shell.x, b[1][1] - shell.y))[0]
+    border, intersection_point = min(borders_with_intersections,
+            key=lambda b: math.hypot(b[1][0] - shell.x, b[1][1] - shell.y))
 
     angle = geometry.get_angle(border[0] - border[2], border[1] - border[3], shell.speedX, shell.speedY)
     if angle > math.pi / 2:
         angle = math.pi - angle
     angle = math.pi / 2. - angle
 
-    angle = geometry.rad_to_degree(angle)
-    if shell.type == ShellType.REGULAR:
-        ricochet_angle = 60.
-        if angle > ricochet_angle:
-            return 0.
-        else:
-            # return 20.
-            return (max_value + ((min_value - max_value) * angle) / ricochet_angle)
-    else:
-        # return 35.
-        return 2. * (max_value + ((min_value - max_value) * angle) / 90.)
+    r1 = math.hypot(border[0] - intersection_point[0], border[1] - intersection_point[1])
+    r2 = math.hypot(border[2] - intersection_point[0], border[3] - intersection_point[1])
+    r = r1 + r2
+    dist_factor = (r - 2. * min(r1, r2)) / r
+
+    return coeff_by_angle(shell, angle) * coeff_by_dist_factor(dist_factor)
+
     # print angle
     # if border == front:
     #     print 'front'

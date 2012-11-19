@@ -359,6 +359,9 @@ def new_best_avoid_shell(shell, me, world, move):
     stategy = min(strategies, key=lambda s: prediction.damage(me, shell, world, s[0], s[1]))
     move.left_track_power = stategy[0]
     move.right_track_power = stategy[1]
+    # print world.tick, ":", stategy[0], stategy[1], \
+    #         prediction.damage(me, shell, world, stategy[0], stategy[1])
+    return True
 
 def avoid_shells(me, world, move):
 
@@ -375,8 +378,8 @@ def avoid_shells(me, world, move):
     else:
         shell_to_avoid = min(shells_to_avoid, key=lambda s: time_to_shell_hit(me, s))
 
-    return avoid_shell(shell_to_avoid, me, world, move)
-    # return new_best_avoid_shell(shell_to_avoid, me, world, move)
+    # return avoid_shell(shell_to_avoid, me, world, move)
+    return new_best_avoid_shell(shell_to_avoid, me, world, move)
 
 
 def get_bonus_rating(me, bonus):
@@ -462,13 +465,12 @@ def get_best_zone(me, world):
 
                 # 0.3 * team_addition(zone) + \
 
-
     res = max(neighbour_zones, key=lambda z: value(z))
     return res
 
 
 def get_strategic_goal(me, world):
-    enemies = all_enemies(world)
+    # enemies = all_enemies(world)
 
     team = all_teammates_without_me(world, me)
     usefull_bonuses = filter(lambda b: assessments.is_bonus_usefull(me, b, world), world.bonuses)
