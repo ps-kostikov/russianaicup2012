@@ -41,8 +41,8 @@ def cross_boundaries(tank, world):
             if geometry.are_intervals_intersect(x1, y1, x2, y2, *world_border):
                 return True
 
-    for obstacle in world.obstacles:
-        for border in utils.get_borders(obstacle):
+    for unit in world.obstacles + utils.other_tanks(world, tank):
+        for border in utils.get_borders(unit):
             for tank_border in tank_borders:
                 x1, y1, x2, y2 = tank_border
                 if geometry.are_intervals_intersect(x1, y1, x2, y2, *border):
