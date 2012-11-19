@@ -97,7 +97,8 @@ def get_zones(world):
         while y <= max_y + 1.:
             append = True
             for obstacle in world.obstacles:
-                if within_unit(x, y, obstacle):
+                rad = math.hypot(obstacle.width / 2., obstacle.height / 2.) + 30.
+                if math.hypot(x - obstacle.x, y - obstacle.y) < rad:
                     append = False
                     break
             if append:
