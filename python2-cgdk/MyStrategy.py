@@ -344,7 +344,7 @@ def avoid_shell(shell, me, world, move):
         return True
 
 
-def new_best_avoid_shell(shell, me, world, move):
+def new_best_avoid_shells(shells, me, world, move):
     strategies = [
             (1., 1.),
             (-1., -1.),
@@ -356,12 +356,19 @@ def new_best_avoid_shell(shell, me, world, move):
             (-1., 0.75),
             ]
 
-    stategy = min(strategies, key=lambda s: prediction.damage(me, shell, world, s[0], s[1]))
+    def damage(s):
+        res = 0.
+        for shell in shells:
+            res += prediction.damage(me, shell, world, s[0], s[1])
+        return res
+
+    stategy = min(strategies, key=lambda s: damage(s))
     move.left_track_power = stategy[0]
     move.right_track_power = stategy[1]
     # print world.tick, ":", stategy[0], stategy[1], \
     #         prediction.damage(me, shell, world, stategy[0], stategy[1])
     return True
+
 
 def avoid_shells(me, world, move):
 
@@ -372,14 +379,14 @@ def avoid_shells(me, world, move):
     if len(shells_to_avoid) == 0:
         return False
 
-    premium_shells_to_avoid = filter(lambda s: s.type == ShellType.PREMIUM, shells_to_avoid)
-    if len(premium_shells_to_avoid) > 0:
-        shell_to_avoid = min(premium_shells_to_avoid, key=lambda s: time_to_shell_hit(me, s))
-    else:
-        shell_to_avoid = min(shells_to_avoid, key=lambda s: time_to_shell_hit(me, s))
+    # premium_shells_to_avoid = filter(lambda s: s.type == ShellType.PREMIUM, shells_to_avoid)
+    # if len(premium_shells_to_avoid) > 0:
+    #     shell_to_avoid = min(premium_shells_to_avoid, key=lambda s: time_to_shell_hit(me, s))
+    # else:
+    #     shell_to_avoid = min(shells_to_avoid, key=lambda s: time_to_shell_hit(me, s))
 
     # return avoid_shell(shell_to_avoid, me, world, move)
-    return new_best_avoid_shell(shell_to_avoid, me, world, move)
+    return new_best_avoid_shells(shells_to_avoid, me, world, move)
 
 
 def get_bonus_rating(me, bonus):
@@ -574,7 +581,6 @@ class MyStrategy:
         #     print 'get damage ', self.health - me.crew_health
 
         # self.health = me.crew_health
-
 
         enemy = get_enemy(me, world)
 

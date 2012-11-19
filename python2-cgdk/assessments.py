@@ -189,8 +189,6 @@ def coeff_by_dist_factor(dist_factor):
 
 def shell_damage(shell, tank):
     '''return health damage'''
-    min_value = 0.5
-    max_value = 1.
     pessimistic_tank = copy(tank)
     pessimistic_tank.width *= 1.1
     pessimistic_tank.height *= 1.1
@@ -207,7 +205,7 @@ def shell_damage(shell, tank):
 
     borders_with_intersections = filter(lambda bi: bi[1] is not None, borders_with_intersections)
     if not borders_with_intersections:
-        return min_value
+        return 0.
     border, intersection_point = min(borders_with_intersections,
             key=lambda b: math.hypot(b[1][0] - shell.x, b[1][1] - shell.y))
 
@@ -232,4 +230,3 @@ def shell_damage(shell, tank):
     #     print 'back'
     # if border == left:
     #     print 'left'
-    # return 1.
