@@ -69,7 +69,8 @@ def next_tank(tank, world, move_left, move_right):
     ny = tank.y + nsy
 
     angle_a = 0.000627876445651 / 1.5
-    nsa = tank.angular_speed + angle_a * (move_right - move_left)
+    # nsa = tank.angular_speed + angle_a * (move_right - move_left)
+    nsa = tank.angular_speed + angle_a * (move_left - move_right)
     na = tank.angle + nsa
     new = Tank(tank.id,
             x=nx, y=ny,

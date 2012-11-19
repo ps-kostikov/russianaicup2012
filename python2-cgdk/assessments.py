@@ -184,7 +184,7 @@ def coeff_by_angle(shell, angle):
 
 def coeff_by_dist_factor(dist_factor):
     '''dist - from 0. to 1.'''
-    return 1. - 0.5 * dist_factor
+    return 1. - 0.2 * dist_factor
 
 
 def shell_damage(shell, tank):
