@@ -13,15 +13,6 @@ def degree_to_rad(degree):
     return (degree * math.pi) / 180
 
 
-# def get_cross(v1x, v1y, v2x, v2y):
-#     return v1x * v2y - v1y * v2x
-
-
-# def get_cross_sign(v1x, v1y, v2x, v2y):
-#     cc = get_cross(v1x, v1y, v2x, v2y)
-#     return 1. if cc > 0 else -1.
-
-
 def intervals_intersection(x1, y1, x2, y2, x3, y3, x4, y4):
     a1 = x2 - x1
     a2 = y2 - y1

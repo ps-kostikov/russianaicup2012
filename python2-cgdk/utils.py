@@ -60,7 +60,7 @@ def is_teammate(tank, other_tank):
 def other_tanks(world, tank):
     return filter(lambda t: t.id != tank.id, world.tanks)
 
-    
+
 def all_enemies(world):
     '''alive tanks not in my team'''
     return filter(lambda t: alive(t) and not t.teammate, world.tanks)
@@ -126,7 +126,6 @@ def is_goal_blocked_by(shell, goal, blocker):
     dx = pessimistic_coeff * (nvx * SHELL_HEIGHT / 2.)
     dy = pessimistic_coeff * (nvy * SHELL_HEIGHT / 2.)
     main_line = (gx, gy, shell.x, shell.y)
-    # print main_line
     border_line1 = (gx + dx, gy + dy, shell.x + dx, shell.y + dy)
     border_line2 = (gx - dx, gy - dy, shell.x - dx, shell.y - dy)
 

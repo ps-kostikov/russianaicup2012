@@ -17,14 +17,6 @@ from assessments import *
 import assessments
 import prediction
 
-index = 0
-
-
-def log_print(s):
-    global index
-    index += 1
-    print s, index
-
 
 class Point:
     def __init__(self, x, y):
@@ -81,7 +73,6 @@ def make_zone(bonus, tank):
 
 
 def get_zones(world):
-    # delta = 90. / math.sqrt(2.)
     delta = 80.
     min_x, min_y = delta, delta
     max_x, max_y = 1280 - delta, 800 - delta
@@ -133,7 +124,6 @@ def fire_to(goal, me, world, move):
     max_premium_distance = 600
 
     distance = me.get_distance_to_unit(goal)
-    # goal_size = min(goal.width, goal.height)
     goal_size = 15
     max_fire_angle = math.atan2(goal_size, distance)
 
@@ -292,10 +282,8 @@ def avoid_shell(shell, me, world, move):
         est_y = ny + 1.5 * vmy * m_size * power
 
         if not within_world(est_x, est_y, world):
-            # print 'avoid borderrrrr'
             power = -power
 
-        # print power
         move.right_track_power = power
         move.left_track_power = power
         return True
@@ -317,11 +305,9 @@ def avoid_shell(shell, me, world, move):
 
         # sign of angle
         preffered_rotation = left * front
-        # log_print('dir rot {0} {1} ====='.format(prefered_power, preffered_rotation))
 
         # if 1, 1 then move front using left track
         def make_move(direction, side):
-            # log_print('front side {0} {1} ====='.format(direction, side))
             if side > 0:
                 move.left_track_power = direction
                 move.right_track_power = direction * angle_share
@@ -332,7 +318,6 @@ def avoid_shell(shell, me, world, move):
         # can rotate, direction > 1 if forward, side > 1 if use side track
         def can_rotate(direction, side):
             res = has_place(fake_me, world, direction, -side)
-            # print "can rotate ", direction, side, res
             return res
 
         for direction, side in [
@@ -491,16 +476,6 @@ def get_strategic_goal(me, world):
     if len(usefull_bonuses) > 0:
         bonus = max(usefull_bonuses, key=lambda b: get_bonus_rating(me, b))
         return make_zone(bonus, me)
-    # if len(enemies) <= 1:
-    #     if len(world.bonuses) > 0:
-    #         bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
-    #         return make_zone(bonus, me)
-
-    # if len(world.bonuses) > 0:
-    #     bonus = max(world.bonuses, key=lambda b: get_bonus_rating(me, b))
-    #     min_enemy_dist = min([me.get_distance_to_unit(e) for e in (enemies)])
-    #     if me.get_distance_to_unit(bonus) < min_enemy_dist:
-    #         return make_zone(bonus, me)
 
     return get_best_zone(me, world)
 
@@ -575,16 +550,6 @@ class MyStrategy:
 
     def move(self, me, world, move):
         begin = time.time()
-        # for shell in world.shells:
-        #     next_shell = prediction.next_shell(shell, world)
-        #     if utils.is_goal_blocked_by(shell, next_shell, me):
-        #         self.predicted_damage = assessments.shell_damage(shell, me)
-        #         print 'predicted_damage ', self.predicted_damage
-
-        # if self.health > me.crew_health:
-        #     print 'get damage ', self.health - me.crew_health
-
-        # self.health = me.crew_health
 
         enemy = get_enemy(me, world)
 

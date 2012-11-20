@@ -220,13 +220,3 @@ def shell_damage(shell, tank):
     dist_factor = (r - 2. * min(r1, r2)) / r
 
     return coeff_by_angle(shell, angle) * coeff_by_dist_factor(dist_factor)
-
-    # print angle
-    # if border == front:
-    #     print 'front'
-    # if border == right:
-    #     print 'right'
-    # if border == back:
-    #     print 'back'
-    # if border == left:
-    #     print 'left'
