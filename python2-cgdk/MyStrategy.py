@@ -1,5 +1,6 @@
 import math
 import time
+import sys
 
 from model.FireType import FireType
 from model.TankType import TankType
@@ -461,6 +462,9 @@ def get_best_zone(me, world):
 
 
     res = max(neighbour_zones, key=lambda z: value(z))
+    # if world.tick == 1:
+    #     if len(team) == 0 or me.id < min(team, key=lambda t: t.id).id:
+    #         print_zones(world, value)
     return res
 
 
@@ -541,6 +545,44 @@ def help_turret(me, move):
         move.left_track_power = -1.
         move.right_track_power = 0.75
     return True
+
+
+def print_zones(world, func):
+    delta = 80.
+    min_x, min_y = delta, delta
+    max_x, max_y = 1280 - delta, 800 - delta
+
+    w_parts_number = int((max_x - min_x) / (2. * constants.ZONE_RADIUS))
+    w_step = (max_x - min_x) / w_parts_number
+
+    h_parts_number = int((max_y - min_y) / (2. * constants.ZONE_RADIUS))
+    h_step = (max_y - min_y) / h_parts_number
+
+    def marker(x, y):
+        for tank in world.tanks:
+            if tank.get_distance_to(x, y) < constants.ZONE_RADIUS:
+                return 'M' if tank.teammate else 'E'
+        return ''
+
+    base = delta
+    x = y = base
+    with open('{0}.txt'.format(world.tick), 'w') as out:
+        while y <= max_y + 1.:
+            while x <= max_x + 1.:
+                append = True
+                for obstacle in world.obstacles:
+                    rad = math.hypot(obstacle.width / 2., obstacle.height / 2.) + 30.
+                    if math.hypot(x - obstacle.x, y - obstacle.y) < rad:
+                        append = False
+                        break
+                if append:
+                    out.write('{0:.2f}{1}\t'.format(func(Zone(x, y)), marker(x, y)))
+                else:
+                    out.write('----\t')
+                x += w_step
+            out.write('\n')
+            x = base
+            y += h_step
 
 
 class MyStrategy:
