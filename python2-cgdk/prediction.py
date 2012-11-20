@@ -8,20 +8,27 @@ from model.Shell import Shell
 import geometry
 import utils
 import assessments
+import constants
 
 REGULAR_COEFF = 0.995
 PREMIUM_COEFF = 0.99
 
 
-def next_shell(shell, world):
-    new_x = shell.x + shell.speedX
-    new_y = shell.y + shell.speedY
-    if shell.type == ShellType.REGULAR:
-        new_speed_x = shell.speedX * REGULAR_COEFF
-        new_speed_y = shell.speedY * REGULAR_COEFF
-    else:
-        new_speed_x = shell.speedX * PREMIUM_COEFF
-        new_speed_y = shell.speedY * PREMIUM_COEFF
+def next_shell(shell, world, tick=1):
+    new_x = shell.x
+    new_y = shell.y
+    new_speed_x = shell.speedX
+    new_speed_y = shell.speedY
+
+    for i in range(tick):
+        new_x = new_x + new_speed_x
+        new_y = new_y + new_speed_y
+        if shell.type == ShellType.REGULAR:
+            new_speed_x = new_speed_x * REGULAR_COEFF
+            new_speed_y = new_speed_y * REGULAR_COEFF
+        else:
+            new_speed_x = new_speed_x * PREMIUM_COEFF
+            new_speed_y = new_speed_y * PREMIUM_COEFF
 
     new_shell = Shell(id=shell.id, player_name=shell.player_name, width=shell.width, height=shell.height,
             x=new_x,
@@ -58,7 +65,7 @@ def cross_boundaries(tank, world):
     return False
 
 
-def next_tank(tank, world, move_left, move_right):
+def next_tank(tank, world, move_left, move_right, tick=1):
     if move_left < 0:
         move_left *= 0.75
 
@@ -68,16 +75,24 @@ def next_tank(tank, world, move_left, move_right):
     move_left *= utils.life_factor(tank)
     move_right *= utils.life_factor(tank)
 
-    a = 0.1
-    nsx = tank.speedX + a * (move_right + move_left) * math.cos(tank.angle)
-    nsy = tank.speedY + a * (move_right + move_left) * math.sin(tank.angle)
-
-    nx = tank.x + nsx
-    ny = tank.y + nsy
-
     angle_a = 0.000627876445651 / 1.5
-    nsa = tank.angular_speed + angle_a * (move_left - move_right)
-    na = tank.angle + nsa
+    a = 0.1
+
+    nsx = tank.speedX
+    nsy = tank.speedY
+    nx = tank.x
+    ny = tank.y
+    nsa = tank.angular_speed
+    na = tank.angle
+
+    for i in range(tick):
+        nx = nx + nsx
+        ny = ny + nsy
+        nsx = nsx + a * (move_right + move_left) * math.cos(na)
+        nsy = nsy + a * (move_right + move_left) * math.sin(na)
+        na = na + nsa
+        nsa = nsa + angle_a * (move_left - move_right)
+
     new = Tank(tank.id,
             x=nx, y=ny,
             speed_x=nsx, speed_y=nsy, angle=na, angular_speed=nsa,
@@ -120,12 +135,17 @@ def damage(tank, shell, world, move_left, move_right):
         return assessments.shell_damage(shell, tank_next)
 
     while (dist_next < dist_prev):
+        if dist_next / constants.SHELL_AVERAGE_SPEED > 10:
+            tick_count = 5
+        else:
+            tick_count = 1
+
         shell_prev = shell_next
         tank_prev = tank_next
         dist_prev = dist_next
 
-        tank_next = next_tank(tank_prev, world, move_left, move_right)
-        shell_next = next_shell(shell_prev, world)
+        tank_next = next_tank(tank_prev, world, move_left, move_right, tick_count)
+        shell_next = next_shell(shell_prev, world, tick_count)
         dist_next = tank_next.get_distance_to_unit(shell_next)
 
         if touch_next_tick(shell, shell_next, tank_next):
