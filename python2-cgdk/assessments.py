@@ -17,7 +17,7 @@ import utils
 
 
 def get_max_premium_distance(world):
-    return math.hypot(world.width, world.height) / 2
+    return 600.
 
 
 def possible_usual_score(me, enemy, world):

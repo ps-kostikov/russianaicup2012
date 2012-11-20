@@ -7,6 +7,7 @@ from model.TankType import TankType
 from model.ShellType import ShellType
 from model.BonusType import BonusType
 from model.Unit import Unit
+from model.Shell import Shell
 
 from geometry import *
 import geometry
@@ -108,7 +109,7 @@ def get_enemy(me, world):
     enemies = all_enemies(world)
     # teammates = all_teammates(world)
     def efficiency(enemy):
-        return possible_score(me, enemy, world) / time_before_hit(tank=me, target=enemy)
+        return assessments.possible_score(me, enemy, world) / time_before_hit(tank=me, target=enemy)
     return max(enemies, key=lambda e: efficiency(e))
 
 
@@ -475,7 +476,7 @@ def get_best_zone(me, world):
         enemy_power = 1 - team_power
         return enemy_addition(zone) + \
                 0.3 * team_addition(zone) + \
-                team_power * my_damage(zone) - \
+                1.3 * team_power * my_damage(zone) - \
                 enemy_power * damage(zone)
 
 
@@ -518,37 +519,45 @@ def avoid_possible_shells(me, world, move):
     if len(enemies) == 0:
         return False
 
-    bother_time = 40
+    bother_time = 50
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
     very_dangerous_enemies = filter(
             lambda e: time_before_hit(tank=e, target=me) <= bother_time, dangerous_enemies)
-    if len(very_dangerous_enemies) != 1:
+    # if len(very_dangerous_enemies) != 1:
+    #     return False
+
+    # enemy = very_dangerous_enemies[0]
+    possible_shells = []
+    for enemy in very_dangerous_enemies:
+        absolute_angle_to_me = math.atan2(me.y - enemy.y, me.x - enemy.x)
+
+        turret_angle_to_me = enemy.get_turret_angle_to_unit(me)
+        if rad_to_degree(turret_angle_to_me) > 10:
+            turret_angle_to_me = degree_to_rad(10)
+        if rad_to_degree(turret_angle_to_me) < -10:
+            turret_angle_to_me = degree_to_rad(-10)
+
+        possible_shell_angle = absolute_angle_to_me - turret_angle_to_me
+
+        spx = math.cos(possible_shell_angle)
+        spy = math.sin(possible_shell_angle)
+        spx = spx * SHELL_AVERAGE_SPEED
+        spy = spy * SHELL_AVERAGE_SPEED
+
+        possible_shell = Shell(id=0, player_name=enemy.player_name, 
+                width=constants.SHELL_WIDTH, height=constants.SHELL_HEIGHT, 
+                x=enemy.x, y=enemy.y,
+                speed_x=spx, speed_y=spy, angle=0, angular_speed=0,
+                type=ShellType.REGULAR)
+
+        if is_goal_blocked(possible_shell, me, world):
+            continue
+        possible_shells.append(possible_shell)
+
+    # return avoid_shell(possible_shell, me, world, move)
+    if len(possible_shells) == 0:
         return False
-
-    enemy = very_dangerous_enemies[0]
-
-    absolute_angle_to_me = math.atan2(me.y - enemy.y, me.x - enemy.x)
-
-    turret_angle_to_me = enemy.get_turret_angle_to_unit(me)
-    if rad_to_degree(turret_angle_to_me) > 10:
-        turret_angle_to_me = degree_to_rad(10)
-    if rad_to_degree(turret_angle_to_me) < -10:
-        turret_angle_to_me = degree_to_rad(-10)
-
-    possible_shell_angle = absolute_angle_to_me - turret_angle_to_me
-
-    spx = math.cos(possible_shell_angle)
-    spy = math.sin(possible_shell_angle)
-    spx = spx * SHELL_AVERAGE_SPEED
-    spy = spy * SHELL_AVERAGE_SPEED
-
-    possible_shell = Unit(0, width=10, height=10, x=enemy.x, y=enemy.y,
-            speed_x=spx, speed_y=spy, angle=0, angular_speed=0)
-
-    if is_goal_blocked(possible_shell, me, world):
-        return False
-
-    return avoid_shell(possible_shell, me, world, move)
+    return new_best_avoid_shells(possible_shells, me, world, move)
 
 
 def help_turret(me, move):
