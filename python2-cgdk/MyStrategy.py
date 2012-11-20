@@ -1,4 +1,6 @@
 import math
+import time
+
 from model.FireType import FireType
 from model.TankType import TankType
 from model.ShellType import ShellType
@@ -572,6 +574,7 @@ class MyStrategy:
         self.predicted_damage = 0.
 
     def move(self, me, world, move):
+        begin = time.time()
         # for shell in world.shells:
         #     next_shell = prediction.next_shell(shell, world)
         #     if utils.is_goal_blocked_by(shell, next_shell, me):
@@ -593,6 +596,8 @@ class MyStrategy:
                 point = zone.get_point_to_move(me)
                 if not move_to_unit(point, me, world, move):
                     help_turret(me, move)
+
+        # print world.tick, ";", time.time() - begin
 
     def select_tank(self, tank_index, team_size):
         return TankType.MEDIUM
