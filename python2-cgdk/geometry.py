@@ -13,7 +13,17 @@ def degree_to_rad(degree):
     return (degree * math.pi) / 180
 
 
+cache = {}
 def intervals_intersection(x1, y1, x2, y2, x3, y3, x4, y4):
+    global cache
+    key = ("{0:.2f}" * 8).format(x1, y1, x2, y2, x3, y3, x4, y4)
+    if cache.has_key(key):
+        return cache[key]
+
+    def do_cache(value):
+        cache[key] = value
+        return value
+
     a1 = x2 - x1
     a2 = y2 - y1
     b1 = x3 - x4
@@ -23,14 +33,14 @@ def intervals_intersection(x1, y1, x2, y2, x3, y3, x4, y4):
     d = float(a1 * b2 - a2 * b1)
 
     if abs(d) < 0.001:
-        return None
+        return do_cache(None)
 
     t = (c1 * b2 - c2 * b1) / d
     s = (c2 * a1 - c1 * a2) / d
 
     if 0 <= t <= 1 and 0 <= s <= 1:
-        return x2 * t + (1 - t) * x1, y2 * t + (1 - t) * y1
-    return None
+        return do_cache((x2 * t + (1 - t) * x1, y2 * t + (1 - t) * y1))
+    return do_cache(None)
 
 def are_intervals_intersect(x1, y1, x2, y2, x3, y3, x4, y4):
     return intervals_intersection(x1, y1, x2, y2, x3, y3, x4, y4) is not None
