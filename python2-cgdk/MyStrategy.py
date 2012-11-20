@@ -435,30 +435,48 @@ def get_best_zone(me, world):
         return res * coef
 
     def damage(zone):
+        # res = 0
+        # for e in enemies:
+        #     res += get_power(e) * damage_probability(e.x, e.y, zone.x, zone.y)
+        # return res
+
         res = 0
         for e in enemies:
-            res += get_power(e) * damage_probability(e.x, e.y, zone.x, zone.y)
+            my_damage_prob = damage_probability(e.x, e.y, zone.x, zone.y)
+            if len(team) > 0:
+                best_team_target = max(team, key=lambda t: damage_probability(e.x, e.y, t.x, t.y))
+                if damage_probability(e.x, e.y, best_team_target.x, best_team_target.y) > my_damage_prob:
+                    continue
+
+            res += get_power(e) * my_damage_prob
         return res
 
     def my_damage(zone):
-        res = 0
-        power = get_power(me)
-        for e in enemies:
-            res += power * damage_probability(zone.x, zone.y, e.x, e.y)
+        # res = 0
+        # power = get_power(me)
+        # for e in enemies:
+        #     res += power * damage_probability(zone.x, zone.y, e.x, e.y)
 
-        angle_fork_sum = 0.
-        for e in enemies:
-            angle_fork_sum += utils.angle_fork(e, [zone] + team)
-        average_angle_fork = angle_fork_sum / len(enemies)
-        coef = angle_to_coeff(average_angle_fork)
+        # angle_fork_sum = 0.
+        # for e in enemies:
+        #     angle_fork_sum += utils.angle_fork(e, [zone] + team)
+        # average_angle_fork = angle_fork_sum / len(enemies)
+        # coef = angle_to_coeff(average_angle_fork)
+        # return res * coef
+
+        target = max(enemies, key=lambda e: damage_probability(zone.x, zone.y, e.x, e.y))
+        res = get_power(me) * damage_probability(zone.x, zone.y, target.x, target.y)
+        angle_fork = utils.angle_fork(target, [zone] + team)
+        coef = angle_to_coeff(angle_fork)
         return res * coef
+
 
     def value(zone):
         enemy_power = 1 - team_power
         return enemy_addition(zone) + \
                 0.3 * team_addition(zone) + \
                 team_power * my_damage(zone) - \
-                1.2 * enemy_power * damage(zone)
+                enemy_power * damage(zone)
 
 
     res = max(neighbour_zones, key=lambda z: value(z))
