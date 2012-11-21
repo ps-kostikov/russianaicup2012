@@ -422,6 +422,16 @@ def get_best_zone(me, world):
             return 1.
         return 1. + angle / limit
 
+    def blocker_coeff(tank, goal, blocker):
+        if blocker is None:
+            return 1.
+        blocker_rad = math.hypot(blocker.width / 2., blocker.height / 2.)
+        nx, ny = geometry.get_nearest_point(tank.x, tank.y, goal.x, goal.y, blocker.x, blocker.y)
+        dist = math.hypot(blocker.x - nx, blocker.y - ny)
+        if dist > blocker_rad:
+            return 1.
+        return dist / blocker_rad
+
     def enemy_addition_value(distance):
         min_dist = 90.
         if distance > min_dist:
@@ -435,41 +445,60 @@ def get_best_zone(me, world):
         coef = angle_to_coeff(utils.angle_fork(zone, enemies))
         return res * coef
 
+    def single_damage_value(tank, target, tx=None, ty=None):
+        if tx is None:
+            tx = tank.x
+        if ty is None:
+            ty = tank.y
+        power = assessments.get_power(tank)
+        dp = assessments.damage_probability(tx, ty, target.x, target.y)
+        blocker = utils.get_static_blocker_point(Point(tx, ty), target, world)
+        bc = blocker_coeff(Point(tx, ty), target, blocker)
+        return power * dp * bc
+
+    def damage_value(x, y):
+        '''damage that enemy team can hit to tank in (x, y)'''
+        res = 0.
+        angle_fork = utils.angle_fork(Point(x, y), enemies)
+        for e in enemies:
+            res += single_damage_value(e, Point(x, y))
+        return res * angle_to_coeff(angle_fork)       
+
     def damage(zone):
+        '''damage that our team can get if me in zone'''
+        dv = damage_value(zone.x, zone.y)
+        for t in team:
+            team_dv = damage_value(t.x, t.y)
+            dv = max(team_dv, dv)
+        return dv
         # res = 0
         # for e in enemies:
-        #     res += get_power(e) * damage_probability(e.x, e.y, zone.x, zone.y)
+        #     my_damage_prob = damage_probability(e.x, e.y, zone.x, zone.y)
+        #     if len(team) > 0:
+        #         best_team_target = max(team, key=lambda t: damage_probability(e.x, e.y, t.x, t.y))
+        #         if damage_probability(e.x, e.y, best_team_target.x, best_team_target.y) > my_damage_prob:
+        #             continue
+
+        #     res += get_power(e) * my_damage_prob
         # return res
 
-        res = 0
-        for e in enemies:
-            my_damage_prob = damage_probability(e.x, e.y, zone.x, zone.y)
-            if len(team) > 0:
-                best_team_target = max(team, key=lambda t: damage_probability(e.x, e.y, t.x, t.y))
-                if damage_probability(e.x, e.y, best_team_target.x, best_team_target.y) > my_damage_prob:
-                    continue
-
-            res += get_power(e) * my_damage_prob
-        return res
+    def my_damage_value(x, y, ex, ey):
+        '''damage that our team can heat to enemy in (ex, ey) if me in (x, y)'''
+        res = single_damage_value(me, Point(ex, ey), x, y)
+        angle_fork = utils.angle_fork(Point(ex, ey), [Point(x, y)] + team)
+        for t in team:
+            res += single_damage_value(t, Point(ex, ey))
+        return res * angle_to_coeff(angle_fork)
 
     def my_damage(zone):
-        # res = 0
-        # power = get_power(me)
-        # for e in enemies:
-        #     res += power * damage_probability(zone.x, zone.y, e.x, e.y)
-
-        # angle_fork_sum = 0.
-        # for e in enemies:
-        #     angle_fork_sum += utils.angle_fork(e, [zone] + team)
-        # average_angle_fork = angle_fork_sum / len(enemies)
-        # coef = angle_to_coeff(average_angle_fork)
+        '''damage that our team can heat if me in (x, y)'''
+        target = max(enemies, key=lambda e: my_damage_value(zone.x, zone.y, e.x, e.y))
+        return my_damage_value(zone.x, zone.y, target.x, target.y)
+        # target = max(enemies, key=lambda e: damage_probability(zone.x, zone.y, e.x, e.y))
+        # res = get_power(me) * damage_probability(zone.x, zone.y, target.x, target.y)
+        # angle_fork = utils.angle_fork(target, [zone] + team)
+        # coef = angle_to_coeff(angle_fork)
         # return res * coef
-
-        target = max(enemies, key=lambda e: damage_probability(zone.x, zone.y, e.x, e.y))
-        res = get_power(me) * damage_probability(zone.x, zone.y, target.x, target.y)
-        angle_fork = utils.angle_fork(target, [zone] + team)
-        coef = angle_to_coeff(angle_fork)
-        return res * coef
 
 
     def value(zone):
@@ -481,10 +510,15 @@ def get_best_zone(me, world):
 
 
     res = max(neighbour_zones, key=lambda z: value(z))
-    # if world.tick == 1:
+    # if world.tick > 1:
     #     if len(team) == 0 or me.id < min(team, key=lambda t: t.id).id:
-    #         print_zones(world, value)
+    #         global flag
+    #         if not flag:
+    #             print_zones(me, world, value)
+    #         flag = True
     return res
+
+# flag = False
 
 
 def get_strategic_goal(me, world):
@@ -574,7 +608,7 @@ def help_turret(me, move):
     return True
 
 
-def print_zones(world, func):
+def print_zones(me, world, func):
     delta = 80.
     min_x, min_y = delta, delta
     max_x, max_y = 1280 - delta, 800 - delta
@@ -588,7 +622,12 @@ def print_zones(world, func):
     def marker(x, y):
         for tank in world.tanks:
             if tank.get_distance_to(x, y) < constants.ZONE_RADIUS:
-                return 'M' if tank.teammate else 'E'
+                if me.id == tank.id:
+                    return 'M'
+                elif tank.teammate:
+                    return 'T'
+                else:
+                    return 'E'
         return ''
 
     base = delta

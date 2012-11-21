@@ -155,9 +155,48 @@ def get_blocker(shell, goal, world):
     return None
 
 
+def get_static_blocker(shell, goal, world):
+    blockers = filter(lambda t: not alive(t), world.tanks) + world.obstacles
+    blockers = filter(lambda o: o.get_distance_to_unit(shell) > 0.01 and
+            o.get_distance_to_unit(goal) > 0.01, blockers)
+
+    for blocker in blockers:
+        if is_goal_blocked_by(shell, goal, blocker):
+            return blocker
+    return None
+
+
+def get_static_blocker_point(point, goal, world):
+    shell = make_possible_shell_to_target(point, goal)
+    return get_static_blocker(shell, goal, world)
+
+
+def is_goal_static_blocked(shell, goal, world):
+    blocker = get_static_blocker(shell, goal, world)
+    return blocker is not None
+
+
+def is_goal_static_blocked_point(point, goal, world):
+    shell = make_possible_shell_to_target(point, goal)
+    return is_goal_static_blocked(shell, goal, world)
+
+
 def is_goal_blocked(shell, goal, world):
     blocker = get_blocker(shell, goal, world)
     return blocker is not None
+
+
+def make_possible_shell_to_target(tank, target):
+    shell_angle = math.atan2(target.y - tank.y, target.x - tank.x)
+    tvx = math.cos(shell_angle)
+    tvy = math.sin(shell_angle)
+
+    return Unit(0, width=SHELL_WIDTH, height=SHELL_HEIGHT,
+            x=tank.x,
+            y=tank.y,
+            speed_x=tvx * SHELL_AVERAGE_SPEED,
+            speed_y=tvy * SHELL_AVERAGE_SPEED,
+            angle=shell_angle, angular_speed=0)
 
 
 def make_possible_shell(tank):
