@@ -74,7 +74,6 @@ def make_zone(bonus, tank):
     return Zone(bonus.x, bonus.y, r)
 
 
-
 def get_zones(world):
     delta = 80.
     min_x, min_y = delta, delta
@@ -106,7 +105,6 @@ def get_zones(world):
     return res
 
 
-
 def get_fire_strategy_efficientcy(strategy, world):
     '''strategy: tank -> enemy'''
     def eff(tank, enemy):
@@ -135,16 +133,8 @@ def get_enemy_max_hit(me, world):
         strategy = {}
         for t_id in range(lt):
             base = pow(le, t_id)
-            strategy[teamates[t_id]] = enemies[((i / base) % base) % le]
-        for t, e in strategy.iteritems():
-            print t.id, "->", e.id
-        print '=' * 6
+            strategy[teamates[t_id]] = enemies[(i / base) % le]
         strategies.append(strategy)
-    print "str num ", len(strategies)
-    res = [get_fire_strategy_efficientcy(s, world) for s in strategies]
-    print "res num ", len(set(res))
-
-    import pdb; pdb.set_trace()
 
     best_strategy = max(strategies, key=lambda s: get_fire_strategy_efficientcy(s, world))
     for t, e in best_strategy.iteritems():
@@ -155,15 +145,14 @@ def get_enemy_max_hit(me, world):
 
 def get_enemy_max_score(me, world):
     enemies = all_enemies(world)
+
     def efficiency(enemy):
         return assessments.possible_score(me, enemy, world) / time_before_hit(tank=me, target=enemy)
     return max(enemies, key=lambda e: efficiency(e))
 
 
 def get_enemy(me, world):
-    # if utils.alive_team_number(world) > 2:
-
-    if utils.alive_team_number(world) > 3:
+    if utils.alive_team_number(world) > 2:
         return get_enemy_max_score(me, world)
     return get_enemy_max_hit(me, world)
 
@@ -517,7 +506,7 @@ def get_best_zone(me, world):
         angle_fork = utils.angle_fork(Point(x, y), enemies)
         for e in enemies:
             res += single_damage_value(e, Point(x, y))
-        return res * angle_to_coeff(angle_fork)       
+        return res * angle_to_coeff(angle_fork)
 
     def damage(zone):
         '''damage that our team can get if me in zone'''
@@ -633,8 +622,8 @@ def avoid_possible_shells(me, world, move):
         spx = spx * SHELL_AVERAGE_SPEED
         spy = spy * SHELL_AVERAGE_SPEED
 
-        possible_shell = Shell(id=0, player_name=enemy.player_name, 
-                width=constants.SHELL_WIDTH, height=constants.SHELL_HEIGHT, 
+        possible_shell = Shell(id=0, player_name=enemy.player_name,
+                width=constants.SHELL_WIDTH, height=constants.SHELL_HEIGHT,
                 x=enemy.x, y=enemy.y,
                 speed_x=spx, speed_y=spy, angle=0, angular_speed=0,
                 type=ShellType.REGULAR)
