@@ -549,7 +549,7 @@ def get_best_zone(me, world):
         enemy_power = 1 - team_power
         return enemy_addition(zone) + \
                 0.3 * team_addition(zone) + \
-                1.3 * team_power * my_damage(zone) - \
+                1.1 * team_power * my_damage(zone) - \
                 enemy_power * damage(zone)
 
 
