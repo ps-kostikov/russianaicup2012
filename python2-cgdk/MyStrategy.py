@@ -1,6 +1,7 @@
 import math
 import time
 import sys
+from collections import defaultdict
 
 from model.FireType import FireType
 from model.TankType import TankType
@@ -105,12 +106,66 @@ def get_zones(world):
     return res
 
 
-def get_enemy(me, world):
+
+def get_fire_strategy_efficientcy(strategy, world):
+    '''strategy: tank -> enemy'''
+    def eff(tank, enemy):
+        if utils.is_goal_static_blocked_point(tank, enemy, world):
+            return 0.
+        dp = assessments.damage_probability(tank.x, tank.y, enemy.x, enemy.y)
+        return dp / utils.time_before_hit(tank=tank, target=enemy)
+
+    enemy_coeffs = defaultdict(int)
+    for t, e in strategy.iteritems():
+        enemy_coeffs[e] += 1.
+
+    res = 0.
+    for t, e in strategy.iteritems():
+        res += eff(t, e) * enemy_coeffs[e]
+    return res
+
+
+def get_enemy_max_hit(me, world):
     enemies = all_enemies(world)
-    # teammates = all_teammates(world)
+    teamates = all_teammates(world)
+    strategies = []
+    lt = len(teamates)
+    le = len(enemies)
+    for i in range(pow(le, lt)):
+        strategy = {}
+        for t_id in range(lt):
+            base = pow(le, t_id)
+            strategy[teamates[t_id]] = enemies[((i / base) % base) % le]
+        for t, e in strategy.iteritems():
+            print t.id, "->", e.id
+        print '=' * 6
+        strategies.append(strategy)
+    print "str num ", len(strategies)
+    res = [get_fire_strategy_efficientcy(s, world) for s in strategies]
+    print "res num ", len(set(res))
+
+    import pdb; pdb.set_trace()
+
+    best_strategy = max(strategies, key=lambda s: get_fire_strategy_efficientcy(s, world))
+    for t, e in best_strategy.iteritems():
+        if t.id == me.id:
+            return e
+    return enemies[0]
+
+
+def get_enemy_max_score(me, world):
+    enemies = all_enemies(world)
     def efficiency(enemy):
         return assessments.possible_score(me, enemy, world) / time_before_hit(tank=me, target=enemy)
     return max(enemies, key=lambda e: efficiency(e))
+
+
+def get_enemy(me, world):
+    # if utils.alive_team_number(world) > 2:
+
+    if utils.alive_team_number(world) > 3:
+        return get_enemy_max_score(me, world)
+    return get_enemy_max_hit(me, world)
 
 
 def should_give_way(me, world):

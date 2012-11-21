@@ -75,6 +75,12 @@ def all_teammates_without_me(world, me):
     return filter(lambda t: t.id != me.id, all_teammates(world))
 
 
+def alive_team_number(world):
+    alive_tanks = filter(lambda t: alive(t), world.tanks)
+    player_names = set([t.player_name for t in alive_tanks])
+    return len(player_names)
+
+
 def life_factor(tank):
     '''return factor that reduce turret and track speeds'''
     live_percentage = float(tank.crew_health) / float(tank.crew_max_health)
