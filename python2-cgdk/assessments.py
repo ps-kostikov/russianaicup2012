@@ -218,7 +218,7 @@ def shell_damage(shell, tank):
     r = r1 + r2
     dist_factor = (r - 2. * min(r1, r2)) / r
 
-    return coeff_by_angle(shell, angle) * coeff_by_dist_factor(dist_factor)
+    return coeff_by_angle(shell, geometry.rad_to_degree(angle)) * coeff_by_dist_factor(dist_factor)
 
 
 def regular_shell_time(dist):

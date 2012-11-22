@@ -440,9 +440,9 @@ def new_best_avoid_shells(shells, me, world, move):
             res += prediction.damage(me, shell, world, s[0], s[1])
         return res
 
-    stategy = min(strategies, key=lambda s: damage(s))
-    move.left_track_power = stategy[0]
-    move.right_track_power = stategy[1]
+    strategy = min(strategies, key=lambda s: damage(s))
+    move.left_track_power = strategy[0]
+    move.right_track_power = strategy[1]
     # print world.tick, ":", stategy[0], stategy[1], \
     #         prediction.damage(me, shell, world, stategy[0], stategy[1])
     return True
