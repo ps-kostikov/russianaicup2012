@@ -165,6 +165,35 @@ def should_give_way(me, world):
     return me.id < max_id
 
 
+def can_avoid(goal, me, shell_type):
+    dist = me.get_distance_to_unit(goal)
+    def get_angle():
+        vgx = math.cos(goal.angle)
+        vgy = math.sin(goal.angle)
+        vsx = goal.x - me.x
+        vsy = goal.y - me.y
+        angle = geometry.get_angle(vgx, vgy, vsx, vsy)
+        return angle if angle < math.pi / 2. else math.pi - angle
+    angle = get_angle()
+    if shell_type == ShellType.REGULAR:
+        free_time = assessments.regular_shell_time(dist)
+    else:
+        free_time = assessments.premium_shell_time(dist)
+
+    max_dist = assessments.tank_dist(free_time)
+    if angle < 0.0001:
+        return False
+    need_dist = goal.width / 2. + goal.height / (2. * math.tan(angle))
+    return max_dist > need_dist
+
+
+def under_attack(goal, world):
+    for shell in world.shells:
+        if is_shell_dangerous(goal, shell, world):
+            return True
+    return False
+
+
 def fire_to(goal, me, world, move):
     # max_premium_distance = math.hypot(world.width, world.height) / 2
     max_premium_distance = 600
@@ -194,11 +223,17 @@ def fire_to(goal, me, world, move):
         move.fire_type = FireType.NONE
     elif should_give_way(me, world):
         move.fire_type = FireType.NONE
-    else:
-        if distance > max_premium_distance:
+    elif under_attack(goal, world):
+        if can_avoid(goal, me, ShellType.PREMIUM):
             move.fire_type = FireType.REGULAR
         else:
             move.fire_type = FireType.PREMIUM_PREFERRED
+    elif not can_avoid(goal, me, ShellType.PREMIUM):
+        move.fire_type = FireType.PREMIUM_PREFERRED
+    elif not can_avoid(goal, me, ShellType.REGULAR):
+        move.fire_type = FireType.REGULAR
+    else:
+        move.fire_type = FireType.NONE
 
     # move.fire_type = FireType.NONE
 
@@ -697,8 +732,7 @@ def print_zones(me, world, func):
 
 class MyStrategy:
     def __init__(self):
-        self.health = 100.
-        self.predicted_damage = 0.
+        pass
 
     def move(self, me, world, move):
         begin = time.time()

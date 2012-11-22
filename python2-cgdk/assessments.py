@@ -122,8 +122,7 @@ def get_bonus_factor(tank, bonus):
     else:
         new_tank.premium_shell_count += 3
 
-    # 0.1 for brave
-    return get_power(new_tank) - get_power(tank) + 0.1
+    return get_power(new_tank) - get_power(tank)
 
 
 def time_to_get(tank, unit):
@@ -220,3 +219,24 @@ def shell_damage(shell, tank):
     dist_factor = (r - 2. * min(r1, r2)) / r
 
     return coeff_by_angle(shell, angle) * coeff_by_dist_factor(dist_factor)
+
+
+def regular_shell_time(dist):
+    return shell_time(dist, constants.REGULAR_SHELL_SPEED, constants.REGULAR_SHELL_FACTOR)
+
+
+def premium_shell_time(dist):
+    return shell_time(dist, constants.PREMIUM_SHELL_SPEED, constants.PREMIUM_SHELL_FACTOR)
+
+
+def shell_time(dist, speed, factor):
+    time = max(1., dist / speed)
+    end_speed = speed * pow(factor, int(time))
+    av_speed = (speed + end_speed) / 2.
+    return dist / av_speed
+
+
+def tank_dist(time):
+    '''dist that tank can do in time'''
+    a = 0.1
+    return (a * time * time) / 2.
