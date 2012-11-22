@@ -113,9 +113,14 @@ def get_fire_strategy_efficientcy(strategy, world):
         dp = assessments.damage_probability(tank.x, tank.y, enemy.x, enemy.y)
         return dp / utils.time_before_hit(tank=tank, target=enemy)
 
-    enemy_coeffs = defaultdict(int)
+    enemy_to_attackers = defaultdict(list)
     for t, e in strategy.iteritems():
-        enemy_coeffs[e] += 1.
+        enemy_to_attackers[e].append(t)
+
+    enemy_coeffs = {}
+    for e, attackers in enemy_to_attackers.iteritems():
+        angle = utils.angle_fork(e, attackers)
+        enemy_coeffs[e] = angle_to_coeff(angle)
 
     res = 0.
     for t, e in strategy.iteritems():
@@ -469,6 +474,15 @@ def get_bonus_rating(me, bonus):
     return get_bonus_factor(me, bonus) / time
 
 
+def angle_to_coeff(angle):
+    limit = math.pi / 2.
+    if angle > limit:
+        return 2.
+    if angle < 0:
+        return 1.
+    return 1. + angle / limit
+
+
 def get_best_zone(me, world):
     zones = get_zones(world)
     neighbour_zones = filter(lambda z: me.get_distance_to(z.x, z.y) < constants.ZONE_RADIUS * 2 * 1.6,
@@ -496,14 +510,6 @@ def get_best_zone(me, world):
         for t in team:
             res += team_addition_value(math.hypot(zone.x - t.x, zone.y - t.y))
         return res
-
-    def angle_to_coeff(angle):
-        limit = math.pi / 2.
-        if angle > limit:
-            return 2.
-        if angle < 0:
-            return 1.
-        return 1. + angle / limit
 
     def blocker_coeff(tank, goal, blocker):
         if blocker is None:
