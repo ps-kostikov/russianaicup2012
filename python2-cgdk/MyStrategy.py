@@ -184,7 +184,11 @@ def can_avoid(goal, me, shell_type):
     if angle < 0.0001:
         return False
     need_dist = goal.width / 2. + goal.height / (2. * math.tan(angle))
-    return max_dist > need_dist
+    if shell_type == ShellType.REGULAR:
+        coeff = 1.5
+    else:
+        coeff = 1.
+    return max_dist > coeff * need_dist
 
 
 def under_attack(goal, world):
