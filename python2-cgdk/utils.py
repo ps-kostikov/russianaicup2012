@@ -92,24 +92,6 @@ def get_turret_speed(tank):
     return degree_to_rad(life_factor(tank))
 
 
-def time_before_hit(tank, target):
-    angle_to_target = tank.get_turret_angle_to_unit(target)
-    distance_to_target = tank.get_distance_to_unit(target)
-
-    base_turret_speed = get_turret_speed(tank)
-    if angle_to_target * tank.angular_speed > 0:
-        total_angle_speed = base_turret_speed + abs(tank.angular_speed)
-    else:
-        total_angle_speed = base_turret_speed - abs(tank.angular_speed)
-    eps = 1.e-4
-    if abs(total_angle_speed) < eps:
-        total_angle_speed = eps
-
-    time_before_shot = max(tank.remaining_reloading_time, abs(angle_to_target) / total_angle_speed)
-    flight_time = distance_to_target / SHELL_AVERAGE_SPEED
-    return flight_time + time_before_shot + 1
-
-
 def is_goal_blocked_by(shell, goal, blocker):
     borders = get_borders(blocker)
 
@@ -195,6 +177,24 @@ def is_goal_blocked(shell, goal, world):
 def is_goal_blocked_point(point, goal, world):
     shell = make_possible_shell_to_target(point, goal)
     return is_goal_blocked(shell, goal, world)
+
+
+def get_immobile_blocker(shell, goal, world):
+    blockers = world.bonuses + \
+            filter(lambda t: not alive(t), world.tanks) + \
+            world.obstacles
+    blockers = filter(lambda o: o.get_distance_to_unit(shell) > 0.01 and
+            o.get_distance_to_unit(goal) > 0.01, blockers)
+
+    for blocker in blockers:
+        if is_goal_blocked_by(shell, goal, blocker):
+            return blocker
+    return None
+
+
+def is_goal_immobile_blocked(shell, goal, world):
+    blocker = get_immobile_blocker(shell, goal, world)
+    return blocker is not None
 
 
 def make_possible_shell_to_target(tank, target):

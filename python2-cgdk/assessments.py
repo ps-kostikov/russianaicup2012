@@ -240,3 +240,21 @@ def tank_dist(time):
     '''dist that tank can do in time'''
     a = 0.1
     return (a * time * time) / 2.
+
+
+def time_before_hit(tank, target):
+    angle_to_target = tank.get_turret_angle_to_unit(target)
+    distance_to_target = tank.get_distance_to_unit(target)
+
+    base_turret_speed = get_turret_speed(tank)
+    if angle_to_target * tank.angular_speed > 0:
+        total_angle_speed = base_turret_speed + abs(tank.angular_speed)
+    else:
+        total_angle_speed = base_turret_speed - abs(tank.angular_speed)
+    eps = 1.e-4
+    if abs(total_angle_speed) < eps:
+        total_angle_speed = eps
+
+    time_before_shot = max(tank.remaining_reloading_time, abs(angle_to_target) / total_angle_speed)
+    flight_time = regular_shell_time(distance_to_target)
+    return flight_time + time_before_shot + 1

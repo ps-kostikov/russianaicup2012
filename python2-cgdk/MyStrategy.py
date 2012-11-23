@@ -111,7 +111,7 @@ def get_fire_strategy_efficientcy(strategy, world):
         if utils.is_goal_static_blocked_point(tank, enemy, world):
             return 0.
         dp = assessments.damage_probability(tank.x, tank.y, enemy.x, enemy.y)
-        return dp / utils.time_before_hit(tank=tank, target=enemy)
+        return dp / assessments.time_before_hit(tank=tank, target=enemy)
 
     enemy_to_attackers = defaultdict(list)
     for t, e in strategy.iteritems():
@@ -152,7 +152,7 @@ def get_enemy_max_score(me, world):
     enemies = all_enemies(world)
 
     def efficiency(enemy):
-        return assessments.possible_score(me, enemy, world) / time_before_hit(tank=me, target=enemy)
+        return assessments.possible_score(me, enemy, world) / assessments.time_before_hit(tank=me, target=enemy)
     return max(enemies, key=lambda e: efficiency(e))
 
 
@@ -318,10 +318,10 @@ def is_shell_dangerous(me, shell, world):
             speed_x=me.speedX, speed_y=me.speedY,
             angle=me.angle, angular_speed=me.angular_speed)
 
-    if not is_goal_blocked_by(shell, next_shell, next_me):
+    if not utils.is_goal_blocked_by(shell, next_shell, next_me):
         return False
 
-    if is_goal_blocked(shell, me, world):
+    if utils.is_goal_immobile_blocked(shell, me, world):
         return False
     return True
 
@@ -637,12 +637,12 @@ def get_strategic_goal(me, world):
 
 
 def enemy_is_going_hit_only_me(me, enemy, enemies):
-    mine_time = time_before_hit(tank=enemy, target=me)
+    mine_time = assessments.time_before_hit(tank=enemy, target=me)
     for e in enemies:
         if e.id == enemy.id:
             continue
 
-        if time_before_hit(tank=enemy, target=e) < mine_time:
+        if assessments.time_before_hit(tank=enemy, target=e) < mine_time:
             return False
     return True
 
@@ -655,7 +655,7 @@ def avoid_possible_shells(me, world, move):
     bother_time = 50
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
     very_dangerous_enemies = filter(
-            lambda e: time_before_hit(tank=e, target=me) <= bother_time, dangerous_enemies)
+            lambda e: assessments.time_before_hit(tank=e, target=me) <= bother_time, dangerous_enemies)
     # if len(very_dangerous_enemies) != 1:
     #     return False
 
