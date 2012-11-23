@@ -654,6 +654,7 @@ def avoid_possible_shells(me, world, move):
 
     bother_time = 50
     dangerous_enemies = filter(lambda e: enemy_is_going_hit_only_me(me, e, enemies), enemies)
+    dangerous_enemies = filter(lambda e: not utils.is_goal_blocked_point(e, me, world), dangerous_enemies)
     very_dangerous_enemies = filter(
             lambda e: assessments.time_before_hit(tank=e, target=me) <= bother_time, dangerous_enemies)
     # if len(very_dangerous_enemies) != 1:
