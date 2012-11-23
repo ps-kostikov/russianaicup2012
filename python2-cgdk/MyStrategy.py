@@ -196,7 +196,23 @@ def can_avoid(goal, me, shell_type):
     return max_dist > coeff * need_dist
 
 
-def under_attack(goal, world):
+def get_max_file_angle(tank, goal):
+    distance = tank.get_distance_to_unit(goal)
+    goal_size = 15
+    return math.atan2(goal_size, distance)
+
+
+def under_attack(goal, me, world):
+    teammates = utils.all_teammates_without_me(world, me)
+    for t in teammates:
+        if utils.is_goal_blocked_point(t, goal, world):
+            continue
+        max_fire_angle = get_max_file_angle(t, goal)
+        if 3 * t.get_turret_angle_to_unit(goal) > max_fire_angle:
+            continue
+        if t.remaining_reloading_time < 5:
+            return True
+
     for shell in world.shells:
         if is_shell_dangerous(goal, shell, world):
             return True
@@ -208,8 +224,7 @@ def fire_to(goal, me, world, move):
     max_premium_distance = 600
 
     distance = me.get_distance_to_unit(goal)
-    goal_size = 15
-    max_fire_angle = math.atan2(goal_size, distance)
+    max_fire_angle = get_max_file_angle(me, goal)
 
     time_to_reach = distance / SHELL_AVERAGE_SPEED
 
@@ -232,7 +247,7 @@ def fire_to(goal, me, world, move):
         move.fire_type = FireType.NONE
     elif should_give_way(me, world):
         move.fire_type = FireType.NONE
-    elif under_attack(goal, world):
+    elif under_attack(goal, me, world):
         if can_avoid(goal, me, ShellType.PREMIUM):
             move.fire_type = FireType.REGULAR
         else:
@@ -599,15 +614,10 @@ def get_best_zone(me, world):
 
 
     res = max(neighbour_zones, key=lambda z: value(z))
-    # if world.tick > 1:
+    # if world.tick == 1:
     #     if len(team) == 0 or me.id < min(team, key=lambda t: t.id).id:
-    #         global flag
-    #         if not flag:
-    #             print_zones(me, world, value)
-    #         flag = True
+    #         print_zones(me, world, value)
     return res
-
-# flag = False
 
 
 def get_strategic_goal(me, world):

@@ -192,6 +192,11 @@ def is_goal_blocked(shell, goal, world):
     return blocker is not None
 
 
+def is_goal_blocked_point(point, goal, world):
+    shell = make_possible_shell_to_target(point, goal)
+    return is_goal_blocked(shell, goal, world)
+
+
 def make_possible_shell_to_target(tank, target):
     shell_angle = math.atan2(target.y - tank.y, target.x - tank.x)
     tvx = math.cos(shell_angle)
