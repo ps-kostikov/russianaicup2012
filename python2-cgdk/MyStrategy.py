@@ -570,9 +570,9 @@ def get_best_zone(me, world):
 
     def damage(zone):
         '''damage that our team can get if me in zone'''
-        dv = damage_value(zone.x, zone.y)
+        dv = damage_value(zone.x, zone.y) / utils.life_factor(me)
         for t in team:
-            team_dv = damage_value(t.x, t.y)
+            team_dv = damage_value(t.x, t.y) / utils.life_factor(t)
             dv = max(team_dv, dv)
         return dv
         # res = 0
@@ -596,7 +596,7 @@ def get_best_zone(me, world):
 
     def my_damage(zone):
         '''damage that our team can heat if me in (x, y)'''
-        target = max(enemies, key=lambda e: my_damage_value(zone.x, zone.y, e.x, e.y))
+        target = max(enemies, key=lambda e: my_damage_value(zone.x, zone.y, e.x, e.y) / utils.life_factor(e))
         return my_damage_value(zone.x, zone.y, target.x, target.y)
         # target = max(enemies, key=lambda e: damage_probability(zone.x, zone.y, e.x, e.y))
         # res = get_power(me) * damage_probability(zone.x, zone.y, target.x, target.y)
@@ -614,9 +614,8 @@ def get_best_zone(me, world):
 
 
     res = max(neighbour_zones, key=lambda z: value(z))
-    # if world.tick == 1:
-    #     if len(team) == 0 or me.id < min(team, key=lambda t: t.id).id:
-    #         print_zones(me, world, value)
+    # if world.tick == 270:
+    #     print_zones(me, world, value)
     return res
 
 
@@ -721,7 +720,7 @@ def print_zones(me, world, func):
 
     def marker(x, y):
         for tank in world.tanks:
-            if tank.get_distance_to(x, y) < constants.ZONE_RADIUS:
+            if tank.get_distance_to(x, y) < constants.ZONE_RADIUS * 1.5:
                 if me.id == tank.id:
                     return 'M'
                 elif tank.teammate:
@@ -732,7 +731,7 @@ def print_zones(me, world, func):
 
     base = delta
     x = y = base
-    with open('{0}.txt'.format(world.tick), 'w') as out:
+    with open('{0}_{1}.txt'.format(world.tick, me.id), 'w') as out:
         while y <= max_y + 1.:
             while x <= max_x + 1.:
                 append = True
